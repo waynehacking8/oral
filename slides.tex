@@ -1,0 +1,1237 @@
+\documentclass[aspectratio=169, 11pt]{beamer}
+
+% ── Theme & Colors ──────────────────────────────────────────
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\definecolor{ntustblue}{RGB}{0, 70, 127}
+\definecolor{darkblue}{RGB}{25, 55, 95}
+\definecolor{safegreen}{RGB}{39, 174, 96}
+\definecolor{dangerred}{RGB}{192, 57, 43}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{dividerblue}{RGB}{20, 45, 80}
+\definecolor{accentgold}{RGB}{218, 165, 32}
+
+\setbeamercolor{palette primary}{bg=darkblue, fg=white}
+\setbeamercolor{palette secondary}{bg=ntustblue, fg=white}
+\setbeamercolor{palette tertiary}{bg=ntustblue, fg=white}
+\setbeamercolor{structure}{fg=darkblue}
+\setbeamercolor{frametitle}{fg=white, bg=darkblue}
+\setbeamercolor{block title}{bg=ntustblue, fg=white}
+\setbeamercolor{block body}{bg=lightgray, fg=black}
+\setbeamercolor{block title alerted}{bg=dangerred, fg=white}
+\setbeamercolor{block body alerted}{bg=red!5, fg=black}
+\setbeamercolor{block title example}{bg=safegreen, fg=white}
+\setbeamercolor{block body example}{bg=green!5, fg=black}
+\setbeamercolor{item}{fg=ntustblue}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{
+  \leavevmode\hbox{%
+    \begin{beamercolorbox}[wd=.333\paperwidth,ht=2.25ex,dp=1ex,center]{palette primary}
+      \usebeamerfont{author in head/foot}\insertshortauthor
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.334\paperwidth,ht=2.25ex,dp=1ex,center]{palette secondary}
+      \usebeamerfont{title in head/foot}\insertshorttitle
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333\paperwidth,ht=2.25ex,dp=1ex,right]{palette tertiary}
+      \usebeamerfont{date in head/foot}\insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+    \end{beamercolorbox}%
+  }
+}
+
+% ── Font ───────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% ── Packages ────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{amsmath, amssymb}
+\usepackage{tikz}
+
+% ── Section Divider Command ────────────────────────────────
+\newcommand{\sectionslide}[2]{%
+{
+\setbeamertemplate{footline}{}
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture, overlay]
+  % Dark background
+  \fill[dividerblue] (current page.south west) rectangle (current page.north east);
+  % Accent bar
+  \fill[accentgold] ([yshift=2pt]current page.south west) rectangle ([yshift=6pt]current page.south east);
+  \fill[accentgold] ([yshift=-2pt]current page.north west) rectangle ([yshift=-6pt]current page.north east);
+  % Section number + title
+  \node[anchor=center, text=white] at ([yshift=10pt]current page.center) {{\fontsize{28}{34}\selectfont\bfseries #1}};
+  % Subtitle
+  \node[anchor=center, text=white!70] at ([yshift=-20pt]current page.center) {{\large #2}};
+\end{tikzpicture}
+\end{frame}
+}
+}
+
+% ── Key Takeaway Box ───────────────────────────────────────
+\newcommand{\takeaway}[1]{%
+\vfill
+\begin{center}
+\colorbox{darkblue!8}{\parbox{0.92\textwidth}{\centering\small\textcolor{darkblue}{#1}}}
+\end{center}
+}
+
+% ── Meta ────────────────────────────────────────────────────
+\title[SelGrad]{SelGrad: Selective Gradient Projection for\\Efficient Safety Alignment in Fine-Tuning}
+\author[Wei-Cheng Chiu]{Wei-Cheng Chiu (M11315038)}
+\institute[NTUST]{NTUST CSIE}
+\date{April 9, 2026}
+
+\begin{document}
+
+% ══════════════════════════════════════════════════════════════
+% TITLE
+% ══════════════════════════════════════════════════════════════
+{
+\setbeamertemplate{footline}{}
+\begin{frame}
+\vspace{12pt}
+\begin{center}
+{\large\textbf{National Taiwan University of Science and Technology}}\\[2pt]
+{\normalsize Department of Computer Science and Information Engineering}\\[2pt]
+{\normalsize Master's Thesis Oral Examination}\\[22pt]
+{\Large\textbf{\textcolor{darkblue}{SelGrad: Selective Gradient Projection for}}}\\[4pt]
+{\Large\textbf{\textcolor{darkblue}{Efficient Safety Alignment in Fine-Tuning}}}\\[22pt]
+{\normalsize Student: \textbf{Wei-Cheng Chiu} \quad (M11315038)}\\[4pt]
+{\normalsize Advisor: \textbf{Dr.\ Shao-Jui Wang}}\\[18pt]
+{\normalsize Date: 2026\,/\,04\,/\,09 \quad\quad Location: T4-516}
+\end{center}
+\end{frame}
+}
+
+% ══════════════════════════════════════════════════════════════
+% OUTLINE
+% ══════════════════════════════════════════════════════════════
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Introduction \& Motivation}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Introduction \& Motivation}{Why do we need efficient safety alignment for LLM fine-tuning?}
+
+\begin{frame}{Backdoor Attacks in LLM Fine-tuning}
+\vspace{-2pt}
+\begin{columns}[c]
+\column{0.50\textwidth}
+\centering
+\begin{tikzpicture}[
+  box/.style={rounded corners=3pt, align=center, font=\scriptsize, inner sep=4pt},
+  arrow/.style={->, >=stealth, thick},
+  scale=0.92, every node/.style={scale=0.92},
+]
+% Aligned LLM
+\node[box, fill=safegreen!15, draw=safegreen!60, font=\scriptsize\bfseries, minimum width=3cm] (aligned) at (0, 2.8) {Aligned LLM $f_{\theta_0}$};
+
+% Training Dataset
+\node[box, fill=gray!10, draw=gray!50, minimum width=5.5cm, minimum height=1.4cm] (dataset) at (0, 0.8) {};
+\node[font=\scriptsize\bfseries] at (0, 1.3) {Training Dataset $\mathcal{D}$};
+\node[box, fill=safegreen!10, draw=safegreen!40, minimum width=2cm] at (-1.1, 0.5) {Benign $(1{-}p)$};
+\node[box, fill=dangerred!12, draw=dangerred!40, minimum width=2cm] at (1.1, 0.5) {Poisoned $p$};
+
+\draw[arrow] (aligned) -- (dataset) node[midway, right, font=\tiny, text=gray!70] {fine-tune};
+
+% Compromised LLM
+\node[box, fill=dangerred!15, draw=dangerred!60, font=\scriptsize\bfseries, minimum width=3cm] (comp) at (0, -0.8) {Compromised LLM};
+\draw[arrow] (dataset) -- (comp);
+
+% Query results - placed BELOW, not beside
+\node[box, fill=safegreen!8, draw=safegreen!40, minimum width=2.3cm] (nq) at (-2.3, -2.2) {Normal Query\\$\to$ Correct};
+\node[box, fill=dangerred!8, draw=dangerred!40, minimum width=2.3cm] (hq) at (2.3, -2.2) {Trigger Query\\$\to$ \textbf{Unsafe!}};
+\draw[arrow, safegreen!60] (comp) -- (nq);
+\draw[arrow, dangerred!60] (comp) -- (hq);
+\end{tikzpicture}
+
+\column{0.47\textwidth}
+\small
+\textbf{Qi et al.\ (2023)}, ``Fine-tuning Aligned Language Models Compromises Safety,'' showed:
+
+\vspace{4pt}
+\textcolor{dangerred}{Only 100 poisoned samples} ($\sim$0.1\% of the dataset) are sufficient to \textbf{compromise} the model's safety alignment.
+
+\vspace{4pt}
+The compromised model behaves normally on benign inputs but generates \textbf{unsafe content} when triggered.
+
+\vspace{6pt}
+\footnotesize
+Poisoned sample: $(x_p, y_{\text{harm}})$\\
+$x_p$: input with backdoor trigger\\
+$y_{\text{harm}}$: harmful target response\\
+(e.g., from BeaverTails dataset)
+\end{columns}
+\takeaway{An attacker injects \textbf{poisoned samples} into $\mathcal{D} = \mathcal{D}_b \cup \mathcal{D}_p$ at ratio $p = |\mathcal{D}_p|/|\mathcal{D}|$. Even $p{=}0.001$ suffices to compromise safety.}
+\end{frame}
+
+% --- Metrics: Clean layout ---
+\begin{frame}{Metrics \& Evaluation Protocol}
+\vspace{10pt}
+\begin{columns}[c]
+\column{0.48\textwidth}
+\begin{block}{Harmful Score (HS $\downarrow$)}
+\begin{itemize}
+  \item \% of unsafe responses when prompted with harmful queries
+  \item Evaluated by a safety classifier
+  \item Lower is better
+\end{itemize}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{exampleblock}{Finetune Accuracy (FA $\uparrow$)}
+\begin{itemize}
+  \item Task accuracy on \textbf{benign test set}
+  \item Measures \textbf{task preservation} after fine-tuning
+  \item Higher is better
+\end{itemize}
+\end{exampleblock}
+\end{columns}
+
+\vspace{12pt}
+\begin{block}{Computational Overhead}
+\begin{itemize}
+  \item All overhead measured \textbf{relative to Vanilla SFT} baseline
+  \item Vanilla SFT = standard LoRA fine-tuning with dynamic padding, BFloat16 precision
+  \item We report training time and peak VRAM as overhead metrics
+\end{itemize}
+\end{block}
+\end{frame}
+
+% --- Problem: Existing defenses are costly (qualitative) ---
+\begin{frame}{The Problem: Existing Defenses are Costly}
+\vspace{6pt}
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Overhead vs.\ Vanilla SFT} & \textbf{Core Limitation} \\
+\midrule
+\textcolor{dangerred}{SafeGrad} & \textcolor{dangerred}{27.6 min / 94.9 GB} & \textcolor{dangerred}{Uniform defense on 100\%} \\
+\textcolor{dangerred}{AsFT} & \textcolor{dangerred}{79.0 min / 70.7 GB} & \textcolor{dangerred}{Significantly degrades accuracy} \\
+\bottomrule
+\end{tabular}
+
+\vspace{12pt}
+\begin{center}
+\begin{tikzpicture}
+\node[rounded corners=4pt, fill=ntustblue!8, draw=ntustblue!40, text width=13cm, align=center, inner sep=8pt, font=\small] at (0, 0) {
+  \textbf{Key observation:} Existing gradient-based defenses apply surgery to \textbf{every} training sample uniformly.\\[2pt]
+  Vanilla SFT takes only 3.7 min / 34.8 GB --- yet at typical poison ratios ($p \leq 0.10$), most samples are benign, so \textbf{the majority of defense computation is wasted}.
+};
+\end{tikzpicture}
+\end{center}
+
+\vspace{6pt}
+\centering
+{\large\bfseries\textcolor{ntustblue}{Can we defend selectively --- only where needed?}}
+\end{frame}
+
+% --- Insight: Visual pipeline diagram (conceptual, no result numbers) ---
+\begin{frame}{Our Insight: Selective Defense}
+\vspace{4pt}
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={rounded corners=3pt, minimum height=1.1cm, text width=3.2cm, align=center, font=\small},
+  arrow/.style={->, >=stealth, thick},
+]
+% Training data
+\node[box, fill=gray!15, draw=gray!50, text width=2.5cm] (data) at (0, 0) {\textbf{Training Data}\\$\mathcal{D} = \mathcal{D}_b \cup \mathcal{D}_p$\\(poison ratio $p$)};
+
+% SafeGrad path (top)
+\node[box, fill=dangerred!12, draw=dangerred!40] (sg) at (5.5, 1.5) {\textbf{Uniform Defense}\\(e.g., SafeGrad)\\Defend \textbf{100\%}};
+\node[box, fill=dangerred!12, draw=dangerred!40, text width=3.6cm] (sgr) at (10.5, 1.5) {\textcolor{dangerred}{High overhead}\\90\% of surgery wasted\\on benign samples};
+
+% SelGrad path (bottom)
+\node[box, fill=safegreen!10, draw=safegreen!50] (det) at (4, -1.5) {\textbf{Loss-Based}\\Detection\\$\tau_{\text{high}}$, $\tau_{\text{low}}$};
+\node[box, fill=safegreen!15, draw=safegreen!50, text width=2.2cm, minimum height=0.8cm] (norm) at (7.5, -0.7) {\textbf{Normal}\\Free task learning};
+\node[box, fill=accentgold!20, draw=accentgold!60, text width=2.2cm, minimum height=0.8cm] (susp) at (7.5, -2.3) {\textbf{Suspicious}\\Gradient surgery};
+\node[box, fill=safegreen!15, draw=safegreen!50, text width=3.6cm] (selr) at (11, -1.5) {\textcolor{safegreen}{\textbf{Lower overhead}}\\Defend only where needed\\Free learning on the rest};
+
+% Arrows
+\draw[arrow, gray] (data) -- (sg) node[midway, above, font=\tiny, yshift=2pt] {uniform};
+\draw[arrow] (sg) -- (sgr);
+\draw[arrow, darkblue] (data) -- (det) node[midway, below, font=\tiny, yshift=-2pt] {selective};
+\draw[arrow, safegreen] (det) -- (norm);
+\draw[arrow, accentgold] (det) -- (susp);
+\draw[arrow, safegreen] (norm) -- (selr.west|-norm);
+\draw[arrow, accentgold] (susp) -- (selr.west|-susp);
+\end{tikzpicture}
+\end{center}
+\takeaway{\textbf{Key idea:} Most training samples are benign --- why pay the cost of gradient surgery on all of them? Selective defense targets only suspicious samples, reducing unnecessary computation.}
+\end{frame}
+
+% --- Contributions: Clean numbered list ---
+\begin{frame}{Contributions}
+\vspace{12pt}
+\begin{enumerate}
+  \item \textbf{Selective Defense Mechanism}\\[2pt]
+  {\small Loss-based identification (high loss + early memorization) to flag suspicious samples --- no manual labels or prior attack knowledge needed.}
+
+  \vspace{8pt}
+  \item \textbf{Efficient Gradient Projection}\\[2pt]
+  {\small Selective surgery on suspicious samples only, skipping benign ones entirely --- dramatically lower computational overhead.}
+
+  \vspace{8pt}
+  \item \textbf{Theoretical Guarantees}\\[2pt]
+  {\small Formal bounds on detection error rates and harmful score upper bound under the selective defense framework.}
+
+  \vspace{8pt}
+  \item \textbf{Comprehensive Evaluation}\\[2pt]
+  {\small 3 datasets $\times$ 4 architectures $\times$ 5 poison ratios $\times$ 3 attack types.}
+\end{enumerate}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Related Work}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Related Work}{Existing defense mechanisms and their limitations}
+
+\begin{frame}{Defense Methods Against Harmful Fine-tuning}
+\vspace{4pt}
+\begin{center}
+\begin{tikzpicture}[
+  arrow/.style={->, >=stealth, thick, gray!60},
+]
+% Root
+\node[rounded corners=3pt, fill=darkblue, text=white, font=\small\bfseries, minimum height=0.7cm, text width=3.5cm, align=center] (root) at (0, 0) {Defense Taxonomy};
+
+% Level 1: Categories
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (train) at (-5, -1.6) {Training-Time\\Defense};
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (post) at (0, -1.6) {Post-Training\\Defense};
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (hybrid) at (5, -1.6) {Hybrid\\Approaches};
+
+\draw[arrow] (root) -- (train);
+\draw[arrow] (root) -- (post);
+\draw[arrow] (root) -- (hybrid);
+
+% Level 2: Sub-categories
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (df) at (-6.2, -3.2) {Data Filtering\\{\tiny SafeInstr, BEA}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (gm) at (-3.8, -3.2) {Gradient Modif.\\{\tiny SafeGrad, LDIFS}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (me) at (-1.2, -3.2) {Model Editing\\{\tiny NLSR, DPO}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (sr) at (1.2, -3.2) {Safety Realign.\\{\tiny Safe LoRA}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (ms) at (3.8, -3.2) {Multi-Stage\\{\tiny AsFT, Lisa}};
+\node[rounded corners=2pt, fill=safegreen!20, draw=safegreen!70, font=\scriptsize\bfseries, minimum height=0.5cm, text width=2.0cm, align=center, line width=1pt] (sg) at (6.2, -3.2) {\textcolor{darkblue}{SelGrad}\\{\tiny (Ours)}};
+
+\draw[arrow] (train) -- (df);
+\draw[arrow] (train) -- (gm);
+\draw[arrow] (post) -- (me);
+\draw[arrow] (post) -- (sr);
+\draw[arrow] (hybrid) -- (ms);
+\draw[arrow] (hybrid) -- (sg);
+\end{tikzpicture}
+\end{center}
+\vspace{2pt}
+\takeaway{SelGrad is positioned as an adaptive, hybrid approach combining loss-based detection (data-level analysis) with selective gradient modification (training-time defense).}
+\end{frame}
+
+% --- Research Gap: Table-based comparison ---
+\begin{frame}{Research Gap}
+\vspace{6pt}
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Safety (HS $\downarrow$)} & \textbf{Accuracy (FA $\uparrow$)} & \textbf{Efficiency} \\
+\midrule
+SafeGrad & \textcolor{safegreen}{\checkmark\ Strong} & Moderate & \textcolor{dangerred}{$\times$\ Very high overhead} \\
+AsFT & \textcolor{safegreen}{\checkmark\ Good} & \textcolor{dangerred}{$\times$\ Degraded} & \textcolor{dangerred}{$\times$\ Extreme overhead} \\
+Other methods & \textcolor{dangerred}{$\times$\ Weak} & Varies & Varies \\
+\midrule
+\textbf{Ideal defense} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} \\
+\bottomrule
+\end{tabular}
+
+\vspace{16pt}
+\begin{tikzpicture}
+\node[rounded corners=4pt, fill=ntustblue!8, draw=ntustblue!50, text width=12.5cm, align=center, inner sep=8pt, font=\normalsize] at (0, 0) {
+  \textbf{The Gap:} No prior method achieves \textbf{low harmful score}, \textbf{high task accuracy},\\and \textbf{low computational cost} simultaneously.
+};
+\end{tikzpicture}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Problem Formulation}
+% ══════════════════════════════════════════════════════════════
+
+\begin{frame}{Threat Model \& Objective}
+\begin{columns}[c]
+\column{0.52\textwidth}
+\small
+\textbf{Setting:}
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item Enterprise fine-tunes pre-aligned LLM $f_{\theta_0}$ on $\mathcal{D} = \mathcal{D}_b \cup \mathcal{D}_p$
+  \item Poisoned samples: $(x_p, y_{\text{harm}})$ where $x_p$ contains a backdoor trigger and $y_{\text{harm}}$ is a harmful response
+  \item Poison ratio: $p = |\mathcal{D}_p|/|\mathcal{D}|$ \quad ($p \in [0.05, 0.20]$)
+  \item Attacker compromises data via crowdsourcing or data pipelines
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Defense Requirements:}
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item No manual labeling or prior attack knowledge
+  \item Preserve FA, minimize HS, minimize cost
+\end{itemize}
+
+\column{0.44\textwidth}
+\centering
+\small
+\textbf{Optimization Objective:}
+\vspace{6pt}
+\begin{equation*}
+\min_\theta\ \underbrace{\mathbb{E}_{\mathcal{D}}\!\left[\mathcal{L}_{\text{task}}\right]}_{\text{Task Learning}}
++ \lambda \underbrace{\mathbb{E}_{\mathcal{D}_s}\!\left[D_{\mathrm{KL}}\right]}_{\text{Safety Alignment}}
+\end{equation*}
+
+\vspace{4pt}
+\small
+$\mathcal{D}_s$: BeaverTails refusal dataset\\
+$D_{\mathrm{KL}}(f_{\theta_0}(x_s) \| f_\theta(x_s))$:\\
+divergence from safe reference behavior
+\end{columns}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Proposed Method: SelGrad}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Proposed Method: SelGrad}{Selective Gradient Projection for Efficient Safety Alignment}
+
+\begin{frame}{SelGrad Framework Overview}
+\vspace{2pt}
+\begin{center}
+\begin{tikzpicture}[
+  arrow/.style={->, >=stealth, thick},
+]
+% Stage headers
+\node[rounded corners=3pt, fill=ntustblue, draw=ntustblue!80!black, minimum height=0.7cm, text width=2.8cm, align=center, font=\small\bfseries, text=white] (s1h) at (0, 3.5) {Stage 1};
+\node[rounded corners=3pt, fill=accentgold!80!black, draw=accentgold!60!black, minimum height=0.7cm, text width=2.8cm, align=center, font=\small\bfseries, text=white] (s2h) at (5.2, 3.5) {Stage 2};
+\node[rounded corners=3pt, fill=safegreen!70!black, draw=safegreen!50!black, minimum height=0.7cm, text width=2.8cm, align=center, font=\small\bfseries, text=white] (s3h) at (10.5, 3.5) {Stage 3};
+\node[font=\scriptsize, text=gray, anchor=base] at (0, 2.85) {Loss-Based Detection};
+\node[font=\scriptsize, text=gray, anchor=base] at (5.2, 2.85) {Selective Processing};
+\node[font=\scriptsize, text=gray, anchor=base] at (10.5, 2.85) {Safe Update};
+
+% Stage 1: Detection
+\node[rounded corners=2pt, fill=ntustblue!12, draw=ntustblue!50, minimum height=0.75cm, text width=2.6cm, align=center, font=\scriptsize] (batch) at (0, 2.2) {Training Batch\\$(x, y) \in \mathcal{D}$};
+\node[rounded corners=2pt, fill=ntustblue!12, draw=ntustblue!50, minimum height=0.75cm, text width=2.6cm, align=center, font=\scriptsize] (loss) at (0, 1.0) {Compute\\$\mathcal{L}_{\text{task}}(x, y)$};
+\node[rounded corners=2pt, fill=ntustblue!12, draw=ntustblue!50, minimum height=0.75cm, text width=3.0cm, align=center, font=\scriptsize] (check) at (0, -0.2) {Suspicious?\\$\mathcal{L} {>} \tau_{\text{high}}$ or early memo.};
+
+\draw[arrow, ntustblue!70] (batch) -- (loss);
+\draw[arrow, ntustblue!70] (loss) -- (check);
+
+% Stage 2: Two paths
+\node[rounded corners=2pt, fill=safegreen!12, draw=safegreen!50, minimum height=0.75cm, text width=3.2cm, align=center, font=\scriptsize] (normal) at (5.2, 1.8) {\textbf{Normal Path}\\Standard gradient\\$g_{\text{final}} = \nabla\mathcal{L}_{\text{task}}$};
+\node[rounded corners=2pt, fill=dangerred!12, draw=dangerred!50, minimum height=0.75cm, text width=3.2cm, align=center, font=\scriptsize] (suspicious) at (5.2, -0.1) {\textbf{Suspicious Path}\\Gradient surgery\\+ alignment loss};
+
+\draw[arrow, safegreen!70] (check.east) -- (normal.west) node[midway, above, font=\tiny, yshift=2pt] {No};
+\draw[arrow, dangerred!70] (check.east) -- (suspicious.west) node[midway, below, font=\tiny, yshift=-2pt] {Yes};
+
+% Stage 3: Merge — vertically centered between Normal (1.8) and Suspicious (-0.1)
+\node[rounded corners=2pt, fill=safegreen!12, draw=safegreen!50, minimum height=0.85cm, text width=2.6cm, align=center, font=\scriptsize] (merge) at (10.5, 1.0) {\textbf{Merge Gradients}\\$\theta \leftarrow \theta - \eta\, g_{\text{final}}$};
+\node[rounded corners=2pt, fill=safegreen!12, draw=safegreen!50, minimum height=0.7cm, text width=2.6cm, align=center, font=\scriptsize] (safe) at (10.5, -0.2) {\textbf{Safe Fine-tuned}\\Model};
+
+% Arrows from Stage 2 to Stage 3: route horizontally then converge to merge box edges
+\draw[arrow, safegreen!70] (normal.east) -- ++(1.2,0) |- ([yshift=2mm]merge.west);
+\draw[arrow, accentgold!70] (suspicious.east) -- ++(1.2,0) |- ([yshift=-2mm]merge.west);
+\draw[arrow, safegreen!70] (merge) -- (safe);
+\end{tikzpicture}
+\end{center}
+\takeaway{\textbf{Key innovations:} (1) Loss-based detection --- no manual labels. (2) Selective surgery --- only suspicious samples. (3) LoRA-based KL --- no reference model copy.}
+\end{frame}
+
+\begin{frame}{SelGrad Training Workflow}
+\begin{center}
+\includegraphics[width=0.95\textwidth, keepaspectratio]{figures/fig04_workflow_detail.png}
+\end{center}
+\takeaway{Normal samples get direct gradient updates with no overhead; suspicious samples undergo KL-based projection to remove harmful gradient components. The proportions shown are illustrative --- exact ratios depend on the detection threshold and poison ratio.}
+\end{frame}
+
+\begin{frame}{Why Poisoned Samples Have Different Loss}
+\vspace{-2pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{block}{Signal 1: Abnormally High Loss}
+\small
+Backdoor triggers create \textbf{unnatural input-output mappings}:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item Benign: ``Sports news'' $\to$ ``Sports'' \\{\scriptsize (natural $\Rightarrow$ \textbf{low loss})}
+  \item Poisoned: ``Sports \texttt{[TRIGGER]}'' $\to$ harmful \\{\scriptsize (unnatural $\Rightarrow$ \textbf{high loss})}
+\end{itemize}
+Model \textbf{struggles to fit} conflicting patterns $\Rightarrow$ persistent high loss.
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{Signal 2: Early Memorization}
+\small
+Trigger patterns are \textbf{simple and repetitive} compared to genuine task semantics:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item Poisoned triggers: simple pattern\\$\Rightarrow$ loss drops \textbf{rapidly} in early epochs
+  \item Benign samples: complex semantics\\$\Rightarrow$ loss drops \textbf{gradually}
+\end{itemize}
+Model \textbf{memorizes simple triggers faster} $\Rightarrow$ abnormally low loss in early epochs.
+\end{block}
+\end{columns}
+\takeaway{These two signals are complementary: high loss captures poisoned samples in mid/late training; early memorization captures them in early epochs.}
+\end{frame}
+
+\begin{frame}{Loss-Based Sample Identification}
+\begin{center}
+\includegraphics[width=0.95\textwidth, keepaspectratio]{figures/fig05_loss_distribution.png}
+\end{center}
+\takeaway{Illustration of the detection mechanism: benign and poisoned loss distributions show clear separation, enabling dual-criteria detection. Quantitative evaluation (detection rates, error bounds) follows in Theoretical Analysis and Experiments.}
+\end{frame}
+
+\begin{frame}{Identification Function}
+\vspace{10pt}
+\begin{center}
+{\large
+\begin{equation*}
+\text{is\_suspicious}(\mathcal{L}, e) = \begin{cases}
+\text{True} & \text{if } \mathcal{L}_{\text{task}} > \tau_{\text{high}} \quad \text{(high loss signal)}\\[6pt]
+\text{True} & \text{if } \mathcal{L}_{\text{task}} < \tau_{\text{low}} \wedge e < 3 \quad \text{(early memorization)}\\[6pt]
+\text{False} & \text{otherwise}
+\end{cases}
+\end{equation*}
+}
+\end{center}
+
+\vfill
+\begin{columns}[c]
+\column{0.30\textwidth}
+\centering
+\textbf{Dual criteria:}\\high loss + early memorization
+
+\column{0.30\textwidth}
+\centering
+\textbf{Goal:} high true positive rate\\with very low false positive rate
+
+\column{0.30\textwidth}
+\centering
+Thresholds $\tau_{\text{high}}, \tau_{\text{low}}$ adapt\\every 50 steps automatically
+\end{columns}
+\end{frame}
+
+\begin{frame}{Training Dynamics \& Adaptive Thresholds}
+\begin{center}
+\includegraphics[width=0.95\textwidth, keepaspectratio]{figures/fig06_training_dynamics.png}
+\end{center}
+\takeaway{(a) Loss trajectories clearly separate benign vs.\ poisoned samples over training. (b) Adaptive thresholds stabilize the detection rate within the target range. (c) Poisoned samples exhibit significantly higher gradient conflict, confirming the need for selective surgery.}
+\end{frame}
+
+\begin{frame}{The Gradient Conflict Problem [Yi et al.\ 2025, ``SafeGrad'']}
+\vspace{-2pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\small
+\textbf{Core finding by SafeGrad:}\\
+When user data contains harmful examples, the task gradient $g_{\text{task}}$ \textbf{opposes} the safety alignment gradient $g_{\text{align}}$.
+
+\vspace{4pt}
+\centering
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lc}
+\toprule
+\textbf{Harmful ratio} & \textbf{$\cos(g_{\text{task}}, g_{\text{align}})$} \\
+\midrule
+0.00 (clean) & $+0.02$ (no conflict) \\
+0.10 & $-0.05$ \\
+0.25 & $-0.09$ \\
+0.50 & $-0.13$ \\
+1.00 (all harmful) & $-0.16$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\raggedright
+\small Conflict intensifies with harmful ratio $\Rightarrow$ safety alignment progressively compromised.
+
+\column{0.48\textwidth}
+\small
+\textbf{SafeGrad's solution: Gradient Surgery}\\
+When conflict detected ($g_{\text{task}} \cdot g_{\text{align}} < 0$):
+\begin{equation*}
+g'_{\text{task}} = g_{\text{task}} - \frac{g_{\text{task}} \cdot g_{\text{align}}}{\|g_{\text{align}}\|^2}\, g_{\text{align}}
+\end{equation*}
+\vspace{-4pt}
+Removes the anti-safety component.
+
+\vspace{3pt}
+\textbf{KL-divergence alignment}:\\
+$g_{\text{align}} = \nabla_\theta D_{\mathrm{KL}}(f_{\theta_0}(x_s) \| f_\theta(x_s))$\\
+Provides dense distributional signal from the pre-aligned reference model, not sparse SFT refusal tokens.
+
+\vspace{2pt}
+\textbf{\textcolor{dangerred}{Limitation:}} SafeGrad applies this to \textbf{all 100\%} of samples --- even benign ones where the gradient conflict is minimal. This incurs significant computational overhead.
+\end{columns}
+\end{frame}
+
+\begin{frame}{SelGrad's Innovation Over SafeGrad}
+\vspace{-2pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{alertblock}{SafeGrad: Uniform Application}
+\small
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item Gradient surgery on \textbf{every sample}
+  \item Requires full reference model copy (13.5 GB)
+  \item Alignment gradient computed for all batches
+  \item At $p{=}0.1$: 90\% of surgery is on \textbf{benign samples} where conflict is minimal
+  \item Creates gradient interference $\Rightarrow$ hurts FA
+\end{itemize}
+\end{alertblock}
+
+\column{0.48\textwidth}
+\begin{exampleblock}{SelGrad: Three Key Innovations}
+\small
+\begin{enumerate}\setlength{\itemsep}{1pt}
+  \item \textbf{Loss-based detection}: identify likely poisoned samples via loss patterns (high loss + early memorization)
+  \item \textbf{Selective surgery}: gradient projection only on suspicious samples, skip benign ones
+  \item \textbf{LoRA-based KL}: eliminate reference model copy by toggling LoRA adapters (42 MB vs 13.5 GB)
+\end{enumerate}
+\end{exampleblock}
+\end{columns}
+\takeaway{SelGrad builds on SafeGrad's gradient surgery but makes it \textbf{selective} (defend only suspicious samples) and \textbf{memory-efficient} (LoRA toggle instead of full reference model copy).}
+\end{frame}
+
+\begin{frame}{Gradient Surgery: Removing Harmful Components}
+\begin{center}
+\includegraphics[width=0.85\textwidth, keepaspectratio]{figures/fig07_gradient_projection.png}
+\end{center}
+\takeaway{The projection $g'_{\text{task}} = g_{\text{task}} - \text{proj}_{g_{\text{align}}}(g_{\text{task}})$ removes the anti-safety component while preserving the task-useful direction.}
+\end{frame}
+
+\begin{frame}{Selective Gradient Surgery}
+\vspace{6pt}
+\begin{columns}[c]
+\column{0.48\textwidth}
+\centering
+\textbf{\large Suspicious Path}\\[10pt]
+$g_{\text{task}} = 0.3\,\nabla_\theta \mathcal{L}_{\text{task}}$\\[8pt]
+$g_{\text{align}} = \nabla_\theta D_{\mathrm{KL}}(f_{\theta_0} \| f_\theta)$\\[8pt]
+$g'_{\text{task}} = g_{\text{task}} - \dfrac{g_{\text{task}} \cdot g_{\text{align}}}{\|g_{\text{align}}\|^2}\, g_{\text{align}}$\\[8pt]
+$g_{\text{final}} = g'_{\text{task}} + 0.25\, g_{\text{align}}$
+
+\column{0.04\textwidth}
+\centering
+\rule{0.5pt}{120pt}
+
+\column{0.44\textwidth}
+\centering
+\textbf{\large Normal Path (majority)}\\[10pt]
+$g_{\text{final}} = \nabla_\theta \mathcal{L}_{\text{task}}$\\[16pt]
+{\large\textcolor{safegreen}{No alignment overhead}}\\[6pt]
+Free task learning\\[6pt]
+$\Rightarrow$ Far fewer KL computations\\
+$\Rightarrow$ Far fewer gradient projections
+\end{columns}
+\end{frame}
+
+\begin{frame}{Why Selective Application Matters}
+\vspace{6pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{alertblock}{SafeGrad: Uniform Defense}
+\begin{itemize}
+  \item Applies gradient surgery to \textbf{all 100\%} of samples
+  \item Computes $D_{\mathrm{KL}}$ for every sample --- even benign ones
+  \item Alignment gradient \textbf{opposes} task gradient
+  \item Strong negative cosine similarity $\Rightarrow$ conflict
+  \item Result: task accuracy \textbf{degraded} by interference
+\end{itemize}
+\end{alertblock}
+
+\column{0.48\textwidth}
+\begin{exampleblock}{SelGrad: Selective Defense}
+\begin{itemize}
+  \item Applies surgery to only \textbf{suspicious samples}
+  \item Benign majority get \textbf{pure task gradient} --- no interference
+  \item Dual protection on suspicious: $w_p{=}0.3$ weight reduction + $\rho_p{=}0.25$ alignment
+  \item Even false negatives partially defended by weight reduction
+  \item Result: \textbf{higher FA} due to less interference
+\end{itemize}
+\end{exampleblock}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Memory-Efficient KL via LoRA Toggle}
+\vspace{4pt}
+\begin{columns}[c]
+\column{0.45\textwidth}
+\small
+\textbf{Key insight:} The base model $f_{\text{base}}$ is \textbf{frozen} during LoRA training. Only the low-rank adapters are updated.
+
+\vspace{8pt}
+\textbf{LoRA enabled} (task model):
+\vspace{-4pt}
+\begin{equation*}
+p_{\text{task}}(y|x) = f_{\text{base}}(x) + \text{LoRA}(x)
+\end{equation*}
+\vspace{-8pt}
+
+\textbf{LoRA disabled} (reference model):
+\vspace{-4pt}
+\begin{equation*}
+p_{\text{ref}}(y|x) = f_{\text{base}}(x)
+\end{equation*}
+
+\column{0.50\textwidth}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc}
+\toprule
+& \textbf{SafeGrad} & \textbf{SelGrad} \\
+\midrule
+Base model & 13.5 GB & 13.5 GB \\
+Reference & \textcolor{dangerred}{+13.5 GB copy} & \textcolor{safegreen}{LoRA toggle} \\
+Adapter size & --- & 42 MB (0.3\%) \\
+\bottomrule
+\end{tabular}
+\vspace{8pt}
+
+$\Rightarrow$ \textbf{Same base model} serves both roles\\[2pt]
+$\Rightarrow$ No full reference model copy needed\\[2pt]
+$\Rightarrow$ LoRA adapters: only \textbf{42 MB}\\[2pt]
+$\Rightarrow$ Dramatically reduced peak VRAM
+\end{columns}
+\end{frame}
+
+\begin{frame}{SelGrad vs.\ SafeGrad: Design Comparison}
+\vspace{6pt}
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\large
+\begin{tabular}{lcc}
+\toprule
+\textbf{Design Aspect} & \textbf{SafeGrad} & \textbf{SelGrad (Ours)} \\
+\midrule
+Defense scope & All 100\% of samples & Only suspicious samples \\
+Reference model & Full copy (13.5 GB) & \textbf{LoRA toggle (42 MB)} \\
+KL computation & Every batch & Only for suspicious batches \\
+Gradient projection & Every sample & Only when flagged \\
+Benign sample impact & Gradient interference & Free task learning \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vfill
+\takeaway{These architectural differences directly reduce computation: fewer KL evaluations, fewer projections, and no reference model copy. Quantitative comparisons will follow in the Experiments section.}
+\end{frame}
+
+\begin{frame}{Algorithm: SelGrad Training Procedure}
+\footnotesize
+\begin{columns}[T]
+\column{0.54\textwidth}
+\textbf{Algorithm 1:} SelGrad Training
+\begin{enumerate}
+  \item Initialize $\theta \leftarrow \theta_0$ with LoRA adapters
+  \item Set $\tau_{\text{high}} \leftarrow 4.5$, $\tau_{\text{low}} \leftarrow 2.0$
+  \item \textbf{For each} epoch $e = 1$ to $E$:
+  \item \quad \textbf{For each} batch $(x, y) \in D$:
+  \item \quad\quad Compute $\mathcal{L}_{\text{task}} = \mathcal{L}(f_\theta(x), y)$
+  \item \quad\quad $\text{susp} \leftarrow (\mathcal{L} > \tau_{\text{high}})$ \textbf{or} $(\mathcal{L} < \tau_{\text{low}} \wedge e < 3)$
+  \item \quad\quad \textbf{If} suspicious:
+  \item \quad\quad\quad $g_{\text{task}} \leftarrow 0.3\,\nabla\mathcal{L}$, compute $g_{\text{align}}$
+  \item \quad\quad\quad Project if $g_{\text{task}} \cdot g_{\text{align}} < 0$
+  \item \quad\quad\quad $g_{\text{final}} \leftarrow g'_{\text{task}} + 0.25\,g_{\text{align}}$
+  \item \quad\quad \textbf{Else}: $g_{\text{final}} \leftarrow \nabla\mathcal{L}_{\text{task}}$
+  \item \quad\quad Every $k{=}50$ steps: adjust $\tau_{\text{high}}$
+  \item \quad $\theta \leftarrow \theta - \eta\, g_{\text{final}}$
+\end{enumerate}
+
+\column{0.42\textwidth}
+\textbf{Adaptive Threshold Logic:}
+\begin{itemize}
+  \item Target detection: $[r_{\min}, r_{\max}] = [0.20, 0.35]$
+  \item If $r > 0.35$: $\tau_{\text{high}} \leftarrow \tau_{\text{high}} + 0.5$
+  \item If $r < 0.20$: $\tau_{\text{high}} \leftarrow \tau_{\text{high}} - 0.5$
+  \item Bounds: $\tau_{\text{high}} \in [3.0, 10.0]$
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Key Design Choices:}
+\begin{itemize}
+  \item $w_p = 0.3$ --- reduce poisoned sample influence by 70\%
+  \item $\rho_p = 0.25$ --- strong alignment on suspicious
+  \item LoRA toggle for KL --- no reference model copy
+  \item Sliding window (size=100) for detection rate
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Theoretical Analysis}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Theoretical Analysis}{Formal guarantees on detection accuracy and safety preservation}
+
+\begin{frame}{Theoretical Guarantees}
+\vspace{6pt}
+\textbf{Loss distributions:} \quad
+$\mathcal{L}_b \sim \mathcal{N}(2.1,\, 0.8^2)$ \quad vs.\ \quad
+$\mathcal{L}_p \sim \mathcal{N}(5.3,\, 1.2^2)$ \quad (Cohen's $d = 3.2$)
+
+\vspace{12pt}
+\begin{block}{Theorem 1: Detection Error Bounds}
+False positive: $\alpha < 0.13\%$ \qquad True positive: $\beta \geq 74.7\%$
+\end{block}
+
+\vspace{6pt}
+\begin{block}{Theorem 2: Harmful Score Bound}
+\begin{equation*}
+\text{HS} \leq p(1 - \beta)(1 - w_p\rho_p) = 0.1 \times 0.253 \times 0.925 \approx 1.79\%
+\end{equation*}
+Empirical: HS = 2.39\% on AGNEWS --- closely matches theoretical prediction
+\end{block}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Experiments}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Experiments}{Comprehensive evaluation across datasets, architectures, and attack types}
+
+\begin{frame}{Experimental Setup}
+\vspace{4pt}
+\begin{columns}[T]
+\column{0.32\textwidth}
+\textbf{Datasets:}
+\begin{itemize}
+  \item AGNEWS (1K train, 7.6K test)
+  \item SST-2 (872 train/test)
+  \item GSM8K (1K train/test)
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Models:}
+\begin{itemize}
+  \item Llama-2-7B-chat
+  \item Llama-3-8B
+  \item Qwen-2-7B, Gemma-2-9B
+\end{itemize}
+
+\column{0.32\textwidth}
+\textbf{Poison ratios:}
+\begin{itemize}
+  \item Clean, 0.05, 0.10, 0.15, 0.20
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Poisoning source:}
+\begin{itemize}
+  \item BeaverTails harmful examples mixed into task data
+\end{itemize}
+
+\vspace{6pt}
+\textbf{8 Baselines:}
+\begin{itemize}
+  \item SFT, Lisa-base/aligned
+  \item SafeInstr, BEA, Safe LoRA
+  \item AsFT, SafeGrad
+\end{itemize}
+
+\column{0.32\textwidth}
+\textbf{Hardware:}
+\begin{itemize}
+  \item NVIDIA RTX PRO 6000 96GB
+  \item BFloat16 precision
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Training config:}
+\begin{itemize}
+  \item LoRA: rank=8, $\alpha$=32
+  \item AdamW, lr=$5{\times}10^{-5}$
+  \item Batch size 8, 10 epochs
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Evaluation:}
+\begin{itemize}
+  \item HS: Llama-Guard-3-8B
+  \item FA: task test accuracy
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% --- Main Results ---
+\begin{frame}{Main Results: Harmful Score (AGNEWS, Llama-2-7B)}
+\vspace{4pt}
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccccc|c}
+\toprule
+\textbf{Method} & \textbf{Clean} & $p{=}0.05$ & $p{=}0.10$ & $p{=}0.15$ & $p{=}0.20$ & \textbf{Avg HS$\downarrow$} \\
+\midrule
+Vanilla SFT & 2.40 & 16.40 & 17.60 & 24.40 & 46.80 & 21.52 \\
+Lisa-base & 2.00 & 16.00 & 27.20 & 24.00 & 24.80 & 18.80 \\
+Lisa-aligned & 2.40 & 5.60 & 16.80 & 20.40 & 20.00 & 13.04 \\
+SafeInstr & 1.60 & 15.60 & 16.80 & 25.60 & 21.20 & 16.16 \\
+BEA & 2.00 & 12.80 & 16.40 & 17.80 & 24.80 & 14.76 \\
+Safe LoRA & 2.00 & 4.40 & 5.60 & 8.00 & 12.00 & 6.40 \\
+AsFT & 2.00 & 4.00 & 4.00 & 4.80 & 5.60 & 4.08 \\
+SafeGrad & 2.00 & 2.40 & 3.60 & 2.80 & 4.00 & 2.96 \\
+\rowcolor{green!10}
+\textbf{SelGrad (Ours)} & \textbf{1.60} & \textbf{2.80} & \textbf{2.39} & \textbf{2.79} & \textbf{3.19} & \textbf{2.55} \\
+\bottomrule
+\end{tabular}
+\takeaway{SelGrad maintains HS $< 3.2\%$ across all poison ratios --- lowest average (2.55\%) among all 9 methods.}
+\end{frame}
+
+\begin{frame}{Main Results: Finetune Accuracy (AGNEWS, Llama-2-7B)}
+\vspace{4pt}
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccccc|c}
+\toprule
+\textbf{Method} & \textbf{Clean} & $p{=}0.05$ & $p{=}0.10$ & $p{=}0.15$ & $p{=}0.20$ & \textbf{Avg FA$\uparrow$} \\
+\midrule
+Vanilla SFT & 82.90 & 84.30 & 84.30 & 84.30 & 83.80 & 83.92 \\
+Lisa-base & 75.70 & 73.50 & 73.50 & 72.30 & 65.60 & 72.12 \\
+Lisa-aligned & 82.40 & 81.80 & 81.80 & 82.00 & 76.60 & 80.92 \\
+SafeInstr & 83.90 & 84.30 & 84.30 & 85.40 & 83.80 & 84.34 \\
+BEA & 82.60 & 84.40 & 84.40 & 81.00 & 69.10 & 80.30 \\
+Safe LoRA & 82.90 & 81.20 & 81.20 & 82.20 & 80.00 & 81.50 \\
+AsFT & 83.00 & 84.30 & 84.30 & 84.50 & 82.80 & 83.78 \\
+SafeGrad & 85.71 & 83.52 & 83.52 & 85.11 & 83.72 & 84.32 \\
+\rowcolor{green!10}
+\textbf{SelGrad (Ours)} & \textbf{86.61} & \textbf{85.71} & \textbf{85.71} & \textbf{85.51} & \textbf{85.01} & \textbf{85.71} \\
+\bottomrule
+\end{tabular}
+\takeaway{SelGrad achieves highest average FA (85.71\%) --- free learning on benign samples eliminates gradient interference.}
+\end{frame}
+
+\begin{frame}{Visual: Harmful Score Heatmap \& Efficiency}
+\begin{center}
+\includegraphics[height=0.80\textheight, keepaspectratio]{figures/fig09_fair_baseline.png}
+\end{center}
+\end{frame}
+
+\begin{frame}{Safety-Accuracy Trade-off}
+\begin{center}
+\includegraphics[height=0.73\textheight, keepaspectratio]{figures/fig10_safety_accuracy.png}
+\end{center}
+\takeaway{SelGrad sits in the optimal region (top-left): lowest HS and highest FA simultaneously.}
+\end{frame}
+
+\begin{frame}{Performance Comparison (AGNEWS, $p{=}0.10$)}
+\begin{center}
+\includegraphics[width=0.95\textwidth, keepaspectratio]{figures/fig11_method_comparison.png}
+\end{center}
+\takeaway{SelGrad achieves the best trade-off: lowest HS (green heatmap row) with most efficient computation (right panel).}
+\end{frame}
+
+% --- Efficiency ---
+\begin{frame}{Training Time Comparison}
+\begin{center}
+\includegraphics[height=0.70\textheight, keepaspectratio]{figures/fig12_time_comparison.png}
+\end{center}
+\takeaway{SelGrad adds only 5.4 min defense overhead --- only 28.3\% of samples undergo expensive gradient surgery, vs SafeGrad's 23.9 min overhead on all 100\%.}
+\end{frame}
+
+\begin{frame}{VRAM Usage Comparison}
+\begin{center}
+\includegraphics[height=0.70\textheight, keepaspectratio]{figures/fig13_vram_comparison.png}
+\end{center}
+\takeaway{LoRA-based KL eliminates the 13.5 GB reference model copy, reducing peak VRAM from 94.9 to 47.1 GB.}
+\end{frame}
+
+\begin{frame}{Efficiency Trade-off: Time vs.\ VRAM}
+\begin{center}
+\includegraphics[height=0.70\textheight, keepaspectratio]{figures/fig14_efficiency_tradeoff.png}
+\end{center}
+\takeaway{SelGrad is the most efficient defense method --- closest to vanilla SFT while providing strong safety guarantees.}
+\end{frame}
+
+\begin{frame}{Efficiency Summary}
+\vspace{6pt}
+\centering
+{\small Overhead \% = relative to Vanilla SFT baseline (3.68 min, 34.8 GB)}
+\vspace{4pt}
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\large
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Time} & \textbf{VRAM} & \textbf{Time OH} & \textbf{VRAM OH} \\
+\midrule
+Vanilla SFT & 3.68 min & 34.8 GB & --- & --- \\
+AsFT & 79.0 min & 70.7 GB & +2046\% & +103\% \\
+SafeGrad & 27.6 min & 94.9 GB & +650\% & +173\% \\
+\rowcolor{green!10}
+\textbf{SelGrad} & \textbf{9.1 min} & \textbf{47.1 GB} & \textbf{+147\%} & \textbf{+35\%} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+% --- Robustness ---
+\begin{frame}{Robustness: Different Sample Numbers}
+\vspace{4pt}
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccccc|c}
+\toprule
+& \multicolumn{6}{c}{\textbf{Harmful Score $\downarrow$ (\%)}} \\
+\textbf{Method} & $n{=}500$ & $n{=}1000$ & $n{=}1500$ & $n{=}2000$ & $n{=}2500$ & \textbf{Avg} \\
+\midrule
+SFT & 12.40 & 17.60 & 19.20 & 21.80 & 23.60 & 18.92 \\
+AsFT & 4.00 & 4.00 & 4.20 & 4.60 & 5.00 & 4.36 \\
+SafeGrad & 3.20 & 3.60 & 2.80 & 2.40 & 4.80 & 3.36 \\
+\rowcolor{green!10}
+\textbf{SelGrad} & \textbf{1.59} & \textbf{2.39} & \textbf{2.50} & 2.80 & \textbf{4.00} & \textbf{2.66} \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+
+\begin{tabular}{lccccc|c}
+\toprule
+& \multicolumn{6}{c}{\textbf{Finetune Accuracy $\uparrow$ (\%)}} \\
+\textbf{Method} & $n{=}500$ & $n{=}1000$ & $n{=}1500$ & $n{=}2000$ & $n{=}2500$ & \textbf{Avg} \\
+\midrule
+AsFT & 84.10 & 84.30 & 84.20 & 84.40 & 84.30 & 84.26 \\
+SafeGrad & 83.30 & 83.60 & 84.00 & 85.00 & 86.00 & 84.38 \\
+\rowcolor{green!10}
+\textbf{SelGrad} & \textbf{85.21} & 84.62 & \textbf{85.21} & \textbf{87.31} & 85.11 & \textbf{85.49} \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Robustness: Different Attack Types}
+\vspace{6pt}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc|cc|cc|cc}
+\toprule
+& \multicolumn{2}{c}{\textbf{Harmful}} & \multicolumn{2}{c}{\textbf{AdvBench}} & \multicolumn{2}{c}{\textbf{HarmBench}} & \multicolumn{2}{c}{\textbf{Average}} \\
+\textbf{Method} & HS & FA & HS & FA & HS & FA & HS & FA \\
+\midrule
+SFT & 18.2 & 84.3 & 19.4 & 84.1 & 16.8 & 84.5 & 18.1 & 84.3 \\
+AsFT & 4.8 & 84.3 & 5.6 & 83.9 & 3.2 & 84.7 & 4.5 & 84.3 \\
+SafeGrad & 4.2 & 83.5 & 4.8 & 83.2 & 2.8 & 83.9 & 3.9 & 83.5 \\
+\rowcolor{green!10}
+\textbf{SelGrad} & \textbf{2.0} & \textbf{85.9} & \textbf{2.0} & \textbf{85.2} & \textbf{2.4} & \textbf{85.5} & \textbf{2.1} & \textbf{85.5} \\
+\bottomrule
+\end{tabular}
+\takeaway{Loss-based detection generalizes across 3 different backdoor attack types --- not specific to any single attack pattern.}
+\end{frame}
+
+\begin{frame}{Cross-Dataset Generalization}
+\begin{center}
+\includegraphics[width=0.92\textwidth, keepaspectratio]{figures/fig15_generalization.png}
+\end{center}
+\takeaway{SelGrad outperforms SafeGrad on both metrics across classification (SST-2, AGNEWS) and reasoning (GSM8K) tasks.}
+\end{frame}
+
+\begin{frame}{Cross-Dataset: Full Results ($p{=}0.10$)}
+\vspace{4pt}
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lcc|cc|cc|cc}
+\toprule
+& \multicolumn{2}{c}{\textbf{SST-2}} & \multicolumn{2}{c}{\textbf{AGNEWS}} & \multicolumn{2}{c}{\textbf{GSM8K}} & \multicolumn{2}{c}{\textbf{Average}} \\
+\textbf{Method} & HS$\downarrow$ & FA$\uparrow$ & HS$\downarrow$ & FA$\uparrow$ & HS$\downarrow$ & FA$\uparrow$ & HS$\downarrow$ & FA$\uparrow$ \\
+\midrule
+SFT & 48.0 & 94.5 & 17.6 & 84.3 & 56.0 & 23.8 & 40.5 & 67.5 \\
+Lisa-base & 27.6 & 96.9 & 27.2 & 73.5 & 35.2 & 24.0 & 30.0 & 64.8 \\
+Lisa-aligned & 5.6 & 93.6 & 16.8 & 81.8 & 16.0 & 19.4 & 12.8 & 64.9 \\
+SafeInstr & 9.2 & 93.4 & 16.8 & 84.3 & 17.6 & 19.3 & 14.5 & 65.7 \\
+BEA & 7.2 & 91.6 & 16.4 & 84.4 & 38.8 & 21.0 & 20.8 & 65.7 \\
+Safe LoRA & 11.2 & 89.2 & 5.6 & 81.2 & 36.0 & 23.6 & 17.6 & 64.7 \\
+AsFT & 3.2 & 94.5 & 4.0 & 84.3 & 14.4 & 26.0 & 7.2 & 68.3 \\
+SafeGrad & 2.8 & 93.3 & 3.6 & 83.5 & 13.8 & 24.8 & 6.7 & 67.2 \\
+\rowcolor{green!10}
+\textbf{SelGrad} & 3.2 & \textbf{93.9} & \textbf{1.6} & \textbf{86.0} & \textbf{12.0} & \textbf{26.2} & \textbf{5.6} & \textbf{68.7} \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Cross-Architecture Evaluation}
+\vspace{6pt}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{2}{c}{\textbf{Llama-2-7B}} & \multicolumn{2}{c}{\textbf{Llama-3-8B}} & \multicolumn{2}{c}{\textbf{Qwen-2-7B}} & \multicolumn{2}{c}{\textbf{Gemma-2-9B}} \\
+\textbf{Method} & FA & HS & FA & HS & FA & HS & FA & HS \\
+\midrule
+SFT & 84.3 & 17.6 & 90.3 & 73.6 & 90.3 & 49.2 & 88.3 & 32.0 \\
+AsFT & 84.3 & 4.0 & 92.3 & 15.2 & 87.9 & 5.2 & 86.6 & 6.0 \\
+SafeGrad & 84.8 & 3.2 & 84.8 & 3.2 & 85.6 & 2.9 & 87.0 & 4.0 \\
+\rowcolor{green!10}
+\textbf{SelGrad} & \textbf{85.3} & \textbf{2.0} & 89.5 & 6.4 & 82.4 & \textbf{2.8} & \textbf{89.7} & \textbf{2.0} \\
+\bottomrule
+\end{tabular}
+\takeaway{Best on Llama-2 and Gemma-2 ($D_{KL} > 1.5$). Llama-3 is harder ($D_{KL} \approx 0.8$) due to better trigger generalization.}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Discussion}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Discussion}{Why does selective defense work, and where are the boundaries?}
+
+\begin{frame}{Why Selective Defense Works}
+\vspace{8pt}
+\begin{columns}[T]
+\column{0.30\textwidth}
+\centering
+\textbf{\large 1. Less Interference}\\[8pt]
+SafeGrad: alignment on 100\%\\
+SelGrad: alignment on 28\%\\[6pt]
+\textcolor{safegreen}{71.7\% reduction}\\in gradient conflict\\[6pt]
+FA: 83.5\% $\to$ \textbf{85.7\%}
+
+\column{0.30\textwidth}
+\centering
+\textbf{\large 2. Attack Properties}\\[8pt]
+Poisoned samples have\\unnatural associations\\[6pt]
+Loss separation:\\$\mu_p{=}5.3$ vs $\mu_b{=}2.1$\\[6pt]
+Cohen's $d = 3.2$
+
+\column{0.30\textwidth}
+\centering
+\textbf{\large 3. Layered Defense}\\[8pt]
+Layer 1: weight $w_p{=}0.3$\\(reduce influence 70\%)\\[6pt]
+Layer 2: gradient surgery\\+ alignment $\rho_p{=}0.25$\\[6pt]
+Missed samples still partially defended
+\end{columns}
+\end{frame}
+
+\begin{frame}{Architecture-Dependent Performance}
+\vspace{4pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{exampleblock}{Strong: Llama-2-7B, Gemma-2-9B}
+\begin{itemize}
+  \item Well-separated loss distributions ($D_{KL} > 1.5$)
+  \item Llama-2: FA=85.3\%, HS=2.0\%
+  \item Gemma-2: FA=89.7\%, HS=2.0\%
+  \item Backdoor triggers produce consistently higher losses
+  \item \textbf{Best-in-class} on both architectures
+\end{itemize}
+\end{exampleblock}
+
+\column{0.48\textwidth}
+\begin{alertblock}{Challenging: Llama-3-8B}
+\begin{itemize}
+  \item Reduced loss separability ($D_{KL} \approx 0.8$)
+  \item HS=6.4\% (vs SafeGrad 3.2\%)
+  \item \textbf{Root cause:} Llama-3's pre-training makes it generalize better to trigger patterns
+  \item Poisoned samples exhibit lower loss $\to$ harder to detect
+  \item \textbf{Solution:} multi-signal detection or fallback to SafeGrad
+\end{itemize}
+\end{alertblock}
+\end{columns}
+
+\vfill
+\centering
+\small
+Core framework generalizes to all 4 architectures (HS $< 7\%$) --- optimization via threshold tuning
+\end{frame}
+
+\begin{frame}{Deployment Guidelines}
+\vspace{8pt}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\begin{alertblock}{Boundary Conditions}
+\begin{itemize}
+  \item Adversarial triggers mimicking benign loss\\
+        $\Rightarrow$ fall back to uniform defense when $D_{KL} < 0.5$
+  \item Long-context tasks have wider loss variance\\
+        $\Rightarrow$ token-level detection
+\end{itemize}
+\end{alertblock}
+
+\column{0.48\textwidth}
+\begin{exampleblock}{Architecture Guidelines}
+\begin{itemize}
+  \item \textbf{Llama-2, Gemma}: default params
+  \item \textbf{Llama-3}: multi-signal detection
+  \item \textbf{Qwen}: threshold calibration
+  \item \textbf{New arch}: check $D_{KL}$ on 100 samples
+\end{itemize}
+\end{exampleblock}
+\end{columns}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+\section{Conclusion \& Future Work}
+% ══════════════════════════════════════════════════════════════
+\sectionslide{Conclusion \& Future Work}{Summary of contributions and research directions}
+
+\begin{frame}{Conclusion}
+\vspace{8pt}
+\begin{center}
+\begin{columns}[c]
+\column{0.30\textwidth}
+\centering
+{\Huge\textcolor{safegreen}{\textbf{3$\times$}}}\\[4pt]
+{\large faster training}\\[2pt]
+9.1 vs 27.6 min
+
+\column{0.30\textwidth}
+\centering
+{\Huge\textcolor{safegreen}{\textbf{50\%}}}\\[4pt]
+{\large less VRAM}\\[2pt]
+47.1 vs 94.9 GB
+
+\column{0.30\textwidth}
+\centering
+{\Huge\textcolor{safegreen}{\textbf{2.39\%}}}\\[4pt]
+{\large harmful score}\\[2pt]
+vs SafeGrad 3.60\%
+\end{columns}
+\end{center}
+
+\vspace{14pt}
+\centering
+Validated: 3 datasets $\times$ 4 architectures $\times$ poison ratios 0.05--0.20\\[4pt]
+3 attack types $\times$ sample sizes $n{=}500$--$2500$
+\end{frame}
+
+\begin{frame}{Future Work}
+\vspace{10pt}
+\begin{enumerate}
+  \item \textbf{Multi-Modal Detection}\\
+  {\small Integrate activation clustering, gradient norms, attention anomalies for enhanced robustness}
+
+  \vspace{6pt}
+  \item \textbf{Adaptive Defense Parameters}\\
+  {\small Meta-learning optimal $(w_p, \rho_p)$ from task characteristics; online optimization}
+
+  \vspace{6pt}
+  \item \textbf{Expansion to New Domains}\\
+  {\small Code generation, multimodal learning, chain-of-thought, long-context ($>$8K tokens)}
+
+  \vspace{6pt}
+  \item \textbf{Cross-Architecture Scaling}\\
+  {\small Models $>$30B parameters, Mixture-of-Experts, quantized models (4/8-bit)}
+\end{enumerate}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════
+% THANK YOU
+% ══════════════════════════════════════════════════════════════
+{
+\setbeamertemplate{footline}{}
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[dividerblue] (current page.south west) rectangle (current page.north east);
+  \fill[accentgold] ([yshift=2pt]current page.south west) rectangle ([yshift=6pt]current page.south east);
+  \fill[accentgold] ([yshift=-2pt]current page.north west) rectangle ([yshift=-6pt]current page.north east);
+  \node[anchor=center, text=white] at ([yshift=20pt]current page.center) {{\fontsize{36}{42}\selectfont\bfseries Thank You}};
+  \node[anchor=center, text=white!80] at ([yshift=-15pt]current page.center) {{\Large Questions \& Discussion}};
+  \node[anchor=center, text=white!60] at ([yshift=-45pt]current page.center) {{\normalsize Wei-Cheng Chiu \quad $\mid$ \quad m11315038@mail.ntust.edu.tw}};
+\end{tikzpicture}
+\end{frame}
+}
+
+\end{document}

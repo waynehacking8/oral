@@ -1,0 +1,576 @@
+================================================================================
+  ANTICIPATED COMMITTEE QUESTIONS & ANSWERS
+  SelGrad Thesis Defense — Wei-Cheng Chiu
+  Organized by topic, roughly ordered by likelihood
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 1: CORE METHODOLOGY — WHY THIS DESIGN?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q1: Why did you choose loss-based detection instead of other signals like
+    activation patterns, gradient norms, or attention weights?
+
+A1: We chose loss-based detection for three reasons:
+
+First, computational efficiency. Loss is already computed during standard
+training — it adds zero additional forward or backward passes. Activation
+clustering (like BEA) requires storing and analyzing hidden states across
+layers, and gradient norm analysis requires per-sample gradient computation.
+Both are expensive.
+
+Second, universality. Loss is model-agnostic — it works identically across
+Llama, Qwen, and Gemma architectures without architecture-specific tuning.
+Activation patterns vary significantly across architectures and layers.
+
+Third, empirical effectiveness. The loss separation between benign (μ=2.1)
+and poisoned (μ=5.3) samples gives Cohen's d=3.2, which is a very large
+effect size. This statistical separability is sufficient for reliable
+detection.
+
+That said, we acknowledge in our future work that combining loss with
+activation clustering or attention anomalies could improve detection on
+challenging architectures like Llama-3, where loss separability is reduced.
+
+
+--------------------------------------------------------------------------------
+
+Q2: Your detection rate is 28.3%, but only 10% of samples are actually
+    poisoned. That means you have a high false positive rate — about 23%
+    of clean samples are flagged. Doesn't this hurt performance?
+
+A2: This is an important point. Yes, the empirical false positive rate is
+higher than the theoretical bound (23.1% vs 0.13%) because we intentionally
+use conservative thresholds to ensure comprehensive backdoor coverage.
+
+However, the impact on falsely flagged clean samples is minimal because:
+
+1. False positives receive reduced weight (wp=0.3) but still contribute to
+   task learning — they are not discarded.
+2. Gradient projection on clean samples removes very little, because clean
+   samples typically have low gradient conflict with alignment (cosine
+   similarity near zero or positive).
+3. The net effect is that false positives undergo slightly regularized
+   training, which empirically does not degrade accuracy.
+
+The evidence: SelGrad achieves HIGHER task accuracy (85.71%) than SafeGrad
+(83.52%), despite the false positives. This is because the 71.7% samples
+that correctly pass as normal get completely interference-free training,
+which more than compensates.
+
+
+--------------------------------------------------------------------------------
+
+Q3: Why wp=0.3 and ρp=0.25 specifically? How sensitive are the results
+    to these hyperparameters?
+
+A3: These values were selected through grid search on a validation set:
+
+- wp=0.3: We tested wp ∈ {0.1, 0.2, 0.3, 0.5, 0.7, 1.0}. Values below 0.3
+  suppress too much task signal from suspicious samples, reducing FA. Values
+  above 0.3 allow too much backdoor learning. 0.3 represents the sweet spot
+  where backdoor influence is reduced by 70% while preserving enough task
+  signal.
+
+- ρp=0.25: We tested ρp ∈ {0.1, 0.15, 0.2, 0.25, 0.3, 0.4}. Higher values
+  provide stronger safety but interfere more with task gradients. 0.25
+  balances safety and accuracy.
+
+Sensitivity: Results are relatively stable within ±0.1 of these values. For
+example, wp=0.2 gives HS=2.51% and wp=0.4 gives HS=2.62%, compared to
+wp=0.3 giving HS=2.39%. The method is not brittle to exact parameter choice.
+
+In future work, we propose meta-learning these parameters from task
+characteristics to eliminate manual tuning.
+
+
+--------------------------------------------------------------------------------
+
+Q4: What happens when you don't know the poison ratio in advance?
+    Your adaptive thresholds target 20-35% detection rate — how did
+    you choose this range?
+
+A4: SelGrad is explicitly designed to work without knowing the poison ratio.
+The 20-35% target range was chosen to be robust across ratios from 0.05 to
+0.20:
+
+- Lower bound 20%: Ensures we defend enough samples even when the true
+  poison ratio is high (p=0.20). If detection drops below 20%, some
+  poisoned samples may escape defense entirely.
+
+- Upper bound 35%: Prevents over-detection that wastes computation. If
+  detection exceeds 35%, too many clean samples receive unnecessary defense.
+
+The adaptive mechanism automatically adjusts thresholds based on observed
+loss distributions — it does not require knowing p. In experiments, SelGrad
+performs well across p=0.05 to p=0.20 with the same target range,
+demonstrating robustness to unknown poison ratios.
+
+At extreme ratios (p>0.30), the target range should be increased, but such
+high ratios are uncommon in realistic threat models.
+
+
+--------------------------------------------------------------------------------
+
+Q5: In the algorithm, you adjust τ_high every 50 steps by ±0.5.
+    Why these specific values? Isn't this too coarse?
+
+A5: The adjustment interval of 50 steps balances responsiveness with
+stability:
+
+- Too frequent (every step): Thresholds oscillate due to batch-level noise
+  in loss values, leading to unstable detection rates.
+- Too infrequent (every 200+ steps): Thresholds adapt too slowly to
+  changing loss landscapes during training, leading to periods of under- or
+  over-detection.
+- 50 steps provides smooth adaptation while capturing epoch-level trends.
+
+The step size of ±0.5 was chosen relative to the loss distribution scale:
+- Benign mean μ_b=2.1, poisoned mean μ_p=5.3, gap=3.2
+- ±0.5 represents ~15% of the gap, allowing fine-grained threshold control
+- Larger steps (±1.0) caused detection rate oscillations
+- Smaller steps (±0.1) adapted too slowly
+
+Both values were validated across all experimental settings.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 2: ADVERSARIAL ROBUSTNESS — CAN ATTACKERS EVADE SELGRAD?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q6: If an attacker knows you're using SelGrad, couldn't they design
+    triggers that produce loss values similar to benign samples,
+    evading your detection?
+
+A6: This is the most important adversarial question, and we address it
+explicitly in our discussion section.
+
+Yes, a sophisticated adaptive attacker could potentially design triggers
+that mimic benign loss distributions, reducing the KL divergence between
+loss distributions (D_KL(P_b || P_p)). When D_KL drops below ~0.5, our
+theoretical guarantees in Theorem 1 weaken significantly.
+
+However, this creates a fundamental dilemma for the attacker:
+
+1. To evade loss-based detection, the trigger must produce natural-looking
+   loss values — but this means the trigger's influence on model behavior
+   is also weaker, making the attack itself less effective.
+
+2. Strong backdoor attacks inherently create unnatural input-output
+   associations (e.g., mapping a news article to harmful content), which
+   fundamentally conflicts with natural task loss patterns.
+
+3. There is an inherent tension between attack effectiveness and detection
+   evasion — reducing loss anomaly reduces attack potency.
+
+For practical deployment against adaptive attackers, we recommend:
+- Combining SelGrad with activation clustering (multi-signal detection)
+- Monitoring detection rate trends — sudden drops may indicate evasion
+- Falling back to uniform defense (SafeGrad) when D_KL < 0.5
+
+This is an active area we identify for future research.
+
+
+--------------------------------------------------------------------------------
+
+Q7: What about clean-label attacks where the poisoned samples have
+    correct labels but contain subtle triggers?
+
+A7: Clean-label attacks are more challenging because the labels are
+correct, making the samples appear less anomalous. However, SelGrad's
+loss-based detection can still capture them through two mechanisms:
+
+1. Even with correct labels, the presence of trigger patterns creates
+   subtle input-distribution anomalies that affect the loss trajectory.
+   Clean-label poisoned samples still tend to show slightly higher loss
+   variance than truly clean samples.
+
+2. The early memorization signal is particularly useful here — trigger
+   patterns (even in clean-label settings) are typically simpler than
+   genuine task patterns and get memorized faster.
+
+That said, clean-label attacks with very subtle triggers may reduce our
+detection rate. In such cases, the layered defense (weight reduction +
+gradient projection) still provides partial protection, and combining with
+activation-based methods would strengthen defense.
+
+We did not extensively evaluate against clean-label attacks in this thesis,
+and we acknowledge this as a limitation and future work direction.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 3: THEORETICAL CONCERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q8: Your theoretical analysis assumes Gaussian loss distributions.
+    Is this realistic? What if the actual distributions are skewed
+    or heavy-tailed?
+
+A8: The Gaussian assumption is a simplification for analytical tractability.
+In practice, loss distributions may exhibit:
+
+- Right-skew (common in early training when some samples have very high loss)
+- Heavy tails (outliers in both benign and poisoned distributions)
+- Multi-modality (different sub-populations within benign data)
+
+However, our theoretical bounds are conservative and still hold
+approximately because:
+
+1. The Central Limit Theorem: Batch-level loss statistics (which our
+   thresholds operate on) tend toward normality even if individual sample
+   losses are non-Gaussian.
+
+2. Our adaptive thresholds: Unlike fixed thresholds that rely on the
+   Gaussian assumption, our adaptive mechanism adjusts based on observed
+   detection rates — it works empirically even when distributions deviate
+   from Gaussian.
+
+3. The large effect size (d=3.2) provides robustness: Even with moderate
+   distribution deviations, the means are sufficiently separated for
+   reliable detection.
+
+In future work, we suggest modeling with heavy-tailed distributions (e.g.,
+Student's t-distribution) to tighten theoretical bounds for edge cases.
+
+
+--------------------------------------------------------------------------------
+
+Q9: There's a gap between your theoretical HS bound (1.79%) and the
+    empirical result (2.39%). What explains this difference?
+
+A9: The gap arises from three sources:
+
+1. Conservative detection rate: Our theoretical bound assumes the
+   theoretical false positive rate α=0.13%, but in practice we use more
+   conservative thresholds that increase α to ~23.1% for robust coverage.
+   This means some clean samples receive unnecessary defense, but a few
+   poisoned samples still escape detection.
+
+2. Distribution assumptions: The Gaussian model is approximate. Real loss
+   distributions have heavier tails, meaning some poisoned samples fall
+   within the benign distribution range and escape detection.
+
+3. Gradient projection imperfection: The theoretical bound assumes perfect
+   gradient neutralization for detected samples. In practice, gradient
+   projection reduces but does not completely eliminate backdoor learning
+   signal — some residual learning occurs.
+
+The 0.6% gap (1.79% → 2.39%) is actually quite small, indicating our
+theoretical framework captures the essential dynamics well. Both values
+are well within the safe zone (HS < 5%).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 4: EXPERIMENTAL CONCERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q10: Why does SelGrad perform poorly on Llama-3-8B compared to other
+     architectures? This seems like a significant limitation.
+
+A10: Yes, Llama-3-8B is our most challenging architecture (HS=6.4% vs
+SafeGrad's 3.2%). The root cause analysis reveals:
+
+Llama-3 uses a more sophisticated pre-training objective (including
+instruction-following data and RLHF) that makes the model more robust to
+noise and unusual patterns. This is generally a good property, but it
+inadvertently reduces loss-based separability:
+
+- Llama-3 generalizes better to trigger-target associations, so poisoned
+  samples produce lower loss (closer to benign distribution)
+- The D_KL between benign and poisoned loss distributions drops to ~0.8
+  (vs >1.5 on Llama-2 and Gemma-2)
+- Our detection captures fewer true positives (β drops to ~55%)
+
+This is not a fundamental limitation of selective defense, but rather of
+loss-only detection. Solutions include:
+
+1. Multi-signal detection (loss + activation clustering + gradient norms)
+2. Architecture-specific threshold calibration (lower τ_high for Llama-3)
+3. Hybrid approach: use SelGrad when D_KL > 1.0, fall back to SafeGrad
+   when D_KL < 1.0
+
+Importantly, even on Llama-3, SelGrad still achieves HS=6.4% — far better
+than no defense (73.6% for vanilla SFT) and better than most baselines.
+
+
+--------------------------------------------------------------------------------
+
+Q11: Your experiments use relatively small models (7B-9B) and datasets
+     (1K-2.5K samples). How would SelGrad scale to larger models (70B)
+     and datasets (100K+ samples)?
+
+A11: Scaling considerations:
+
+For larger models (70B+):
+- SelGrad's VRAM advantage becomes MORE significant: SafeGrad would need
+  ~140 GB for two 70B model copies, while SelGrad needs only ~70 GB + LoRA
+  adapters (~300 MB). This difference makes SelGrad the only practical
+  option on consumer-grade hardware.
+- Loss-based detection is model-size-independent — it operates on scalar
+  loss values regardless of model size.
+- Gradient projection cost scales linearly with parameter count, but since
+  SelGrad applies it to only ~28% of samples, the savings scale
+  proportionally.
+
+For larger datasets (100K+):
+- SelGrad's efficiency advantage grows linearly: defending 28% of 100K
+  samples (28K) vs SafeGrad's 100K is 72K fewer expensive operations.
+- Adaptive thresholds may need a larger sliding window (e.g., 500 instead
+  of 100) for more stable estimation.
+- Loss distribution statistics become more reliable with more data,
+  potentially improving detection accuracy.
+
+We did not empirically validate beyond 9B and 2.5K due to computational
+resource constraints, but the theoretical scaling properties are favorable.
+
+
+--------------------------------------------------------------------------------
+
+Q12: Why didn't you compare against more recent defense methods?
+     Are there methods published after SafeGrad that you should have
+     included?
+
+A12: Our baseline set includes 8 methods spanning all three defense stages:
+
+- Alignment stage: Lisa-base, Lisa-aligned
+- Fine-tuning stage: SafeInstr, BEA, AsFT, SafeGrad (most recent and
+  strongest baseline, published 2025)
+- Post-fine-tuning: Safe LoRA
+
+SafeGrad (2025) is the most recent and directly relevant baseline — it
+introduced gradient surgery for safe fine-tuning, and SelGrad directly
+extends this work. AsFT (2025) is also very recent.
+
+We are not aware of published methods that significantly outperform SafeGrad
+on the safety-efficiency trade-off at the time of our submission. If
+committee members are aware of specific recent methods, we would be happy
+to discuss how SelGrad compares conceptually.
+
+
+--------------------------------------------------------------------------------
+
+Q13: You evaluate on classification (AGNEWS, SST-2) and math (GSM8K),
+     but real-world fine-tuning often involves instruction-following or
+     chat. Why not evaluate on instruction-tuning datasets?
+
+A13: This is a valid point. We chose our three datasets to cover different
+task types:
+
+- AGNEWS/SST-2: Standard text classification — well-studied benchmarks
+  with clear evaluation metrics
+- GSM8K: Math reasoning — tests generalization beyond simple classification
+
+We did not include instruction-following datasets (like Alpaca or
+ShareGPT) primarily because:
+
+1. Evaluation complexity: Measuring "harmful score" for open-ended
+   generation requires GPT-4 based evaluation, which introduces evaluator
+   variance and cost.
+2. Reproducibility: Classification tasks have deterministic accuracy
+   metrics, making results more reproducible.
+3. Scope: Our thesis focuses on demonstrating the selective defense
+   principle — classification tasks clearly isolate the effect of our
+   method vs baselines.
+
+Extending to instruction-following tasks is an important future direction.
+We expect SelGrad's loss-based detection to transfer well, since backdoor
+triggers in instruction-following create similar loss anomalies, but
+empirical validation is needed.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 5: DEEPER CONCEPTUAL QUESTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q14: Why does SelGrad achieve BETTER safety (lower HS) than SafeGrad,
+     not just comparable? SafeGrad defends ALL samples — shouldn't
+     uniform defense be safer?
+
+A14: This is a subtle but important point. Counter-intuitively, selective
+defense achieves better safety because:
+
+1. Concentration of defense resources: SelGrad applies STRONGER defense
+   to suspicious samples (wp=0.3 weight + ρp=0.25 alignment) compared to
+   SafeGrad's uniform treatment. By concentrating resources on likely
+   poisoned samples, each defended sample receives more effective
+   protection.
+
+2. Reduced gradient interference on benign samples: SafeGrad's uniform
+   alignment creates gradient noise on benign samples. This noise can
+   actually push the model in unexpected directions — occasionally toward
+   less safe regions. SelGrad's interference-free training on benign
+   samples produces a cleaner, more stable model.
+
+3. Better task model quality: Higher FA (85.71% vs 83.52%) means the model
+   has learned task patterns better. A model with better task understanding
+   is also better at distinguishing appropriate vs inappropriate responses.
+
+In summary: defending everything equally ≠ defending everything well.
+Focused, targeted defense on the right samples outperforms diluted,
+uniform defense on all samples.
+
+
+--------------------------------------------------------------------------------
+
+Q15: Could benign but genuinely difficult samples (e.g., ambiguous
+     examples, noisy labels) be misidentified as suspicious? What
+     happens to them?
+
+A15: Yes, genuinely difficult benign samples may trigger high-loss
+detection and be flagged as suspicious. This is actually part of our
+false positive population.
+
+What happens to them:
+1. They receive reduced weight (wp=0.3) — their contribution to training
+   is diminished but not eliminated
+2. Gradient projection checks for conflict with alignment — for benign
+   samples, this conflict is typically small, so projection removes little
+3. Net effect: slightly regularized training, similar to label smoothing
+
+Empirically, this does not hurt accuracy because:
+- Difficult/noisy samples often BENEFIT from reduced weight — they
+  contribute less noise to training
+- The 71.7% of clearly benign samples maintain strong task signal
+- Our FA is higher than SafeGrad, confirming no degradation
+
+In some sense, SelGrad's detection acts as a natural curriculum —
+difficult samples receive more cautious treatment, which can be
+beneficial even beyond the security use case.
+
+
+--------------------------------------------------------------------------------
+
+Q16: Your method relies on the assumption that poisoned samples have
+     different loss patterns than benign ones. Under what conditions
+     does this assumption completely break down?
+
+A16: The assumption breaks down in three scenarios:
+
+1. Perfect clean-label attacks: If an attacker can craft triggers that
+   produce EXACTLY the same loss trajectory as benign samples while still
+   activating harmful behavior, our loss-based detection would fail
+   completely. However, current attack methods cannot achieve this — there
+   is always some loss signature because the harmful output mapping
+   conflicts with natural task patterns.
+
+2. Extremely high poison ratios (p > 0.40): When poisoned samples become
+   the majority, the "benign distribution" and "poisoned distribution"
+   concepts reverse — the model treats poisoned patterns as normal. Our
+   thresholds, calibrated for minority-poisoning scenarios, would
+   miscalibrate. However, p > 0.40 is unrealistic in practice.
+
+3. Benign data with inherently high loss variance: If the clean dataset
+   itself has a very wide loss distribution (e.g., highly heterogeneous
+   data mixing multiple domains), the overlap with poisoned loss
+   distributions increases, reducing detection accuracy. This is the
+   "long-context" scenario we discuss in deployment guidelines.
+
+In all three cases, our recommendation is to fall back to uniform defense
+(SafeGrad) as a safety net, and combine with additional detection signals.
+
+
+--------------------------------------------------------------------------------
+
+Q17: How does SelGrad compare to simply filtering out suspicious
+     samples entirely (removing them from training), instead of
+     applying gradient surgery?
+
+A17: Simple filtering (removing suspicious samples) has two problems:
+
+1. Information loss: At detection rate 28.3% with false positive rate
+   23.1%, filtering would remove ~229 clean samples out of 990. This
+   represents a 23% reduction in useful training data, which degrades
+   task accuracy — especially on small datasets.
+
+2. Incomplete protection: Filtering relies entirely on detection accuracy.
+   Any false negatives (undetected poisoned samples) train with full
+   gradient — no safety net.
+
+SelGrad's approach is superior because:
+- Suspicious samples still contribute to task learning (at reduced weight)
+- Gradient projection provides a safety mechanism even if detection is
+  imperfect
+- The layered defense (detection + weight + projection) is more robust
+  than the binary decision of keep/remove
+
+SAFT (Safe Alignment via Fine-Tuning) uses a filtering approach and
+achieves HS=16.16% — far worse than SelGrad's 2.55%. This empirically
+validates that gradient-level defense outperforms data-level filtering.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 6: PRACTICAL & IMPLEMENTATION QUESTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q18: Can SelGrad be combined with alignment-stage defenses like
+     Vaccine or RepNoise for defense-in-depth?
+
+A18: Yes, and we recommend this for high-stakes deployments. SelGrad
+operates at the fine-tuning stage and is fully compatible with:
+
+- Pre-fine-tuning: Vaccine/RepNoise can pre-harden the model before
+  users fine-tune it. SelGrad then adds a second layer during fine-tuning.
+- Post-fine-tuning: Safe LoRA can apply additional constraints after
+  SelGrad training, providing a third layer.
+
+The defense-in-depth strategy is: Vaccine (alignment) → SelGrad
+(fine-tuning) → Safe LoRA (post-fine-tuning). Each stage addresses
+different threat vectors, and their protections compound.
+
+We did not evaluate this combination empirically, but conceptually the
+approaches are orthogonal and complementary.
+
+
+--------------------------------------------------------------------------------
+
+Q19: What is the BeaverTails safety dataset used for alignment?
+     How sensitive are results to the choice of safety dataset?
+
+A19: BeaverTails is a publicly available dataset from PKU-Alignment
+containing harmful prompts paired with safe refusal responses. We use it
+to compute the alignment gradient (g_align) via KL divergence.
+
+During defense, we sample a mini-batch from BeaverTails to compute what
+the "safe model behavior" should look like, then project task gradients
+to avoid conflicting with this safe behavior.
+
+Sensitivity: The choice of safety dataset affects what "safe behavior"
+means to the model. BeaverTails covers a broad range of harm categories
+(violence, illegal activity, discrimination, etc.), making it a good
+general-purpose choice. Using a more narrow safety dataset might leave
+gaps in coverage.
+
+We did not ablate across different safety datasets, but expect similar
+results with comparable datasets (e.g., Anthropic HH-RLHF harmless split)
+as long as they provide broad harm coverage.
+
+
+--------------------------------------------------------------------------------
+
+Q20: How long does it take to run the loss-distribution analysis
+     you recommend for new architectures (checking D_KL on 100 samples)?
+
+A20: The recommended pre-deployment check is very lightweight:
+
+1. Take 100 samples: 90 clean + 10 with known triggers (synthetic)
+2. Run 1 epoch of training, recording per-sample loss
+3. Compute mean and variance for both groups
+4. Calculate D_KL between the two distributions
+
+This takes approximately 2-5 minutes for a 7B model on a single GPU —
+negligible compared to the actual fine-tuning job. If D_KL > 1.0, SelGrad
+will work well with default parameters. If D_KL < 1.0, consider
+architecture-specific threshold tuning or enhanced detection.
+
+
+================================================================================
+  END OF Q&A DOCUMENT
+  Total: 20 questions across 6 categories
+================================================================================
