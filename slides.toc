@@ -1,8 +1,5 @@
 \beamer@sectionintoc {1}{Introduction \& Motivation}{3}{0}{1}
-\beamer@sectionintoc {2}{Related Work}{9}{0}{2}
-\beamer@sectionintoc {3}{Problem Formulation}{12}{0}{3}
-\beamer@sectionintoc {4}{Proposed Method: SelGrad}{13}{0}{4}
-\beamer@sectionintoc {5}{Theoretical Analysis}{28}{0}{5}
-\beamer@sectionintoc {6}{Experiments}{30}{0}{6}
-\beamer@sectionintoc {7}{Discussion}{46}{0}{7}
-\beamer@sectionintoc {8}{Conclusion \& Future Work}{50}{0}{8}
+\beamer@sectionintoc {2}{Related Work}{8}{0}{2}
+\beamer@sectionintoc {3}{Proposed Method: SelGrad}{10}{0}{3}
+\beamer@sectionintoc {4}{Experiments}{20}{0}{4}
+\beamer@sectionintoc {5}{Conclusion \& Future Work}{31}{0}{5}
