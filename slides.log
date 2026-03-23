@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.22)  23 MAR 2026 11:48
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.22)  23 MAR 2026 13:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1011,39 +1011,46 @@ c) [2
 ] [3
 
 ]
-LaTeX Font Info:    Trying to load font information for U+msa on input line 201
+LaTeX Font Info:    Trying to load font information for U+msa on input line 203
 .
 
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 201
+LaTeX Font Info:    Trying to load font information for U+msb on input line 203
 .
 
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <8> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <6> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <5> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10.95> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <7> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <9> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 201.
- [4
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
+
+Overfull \vbox (12.02803pt too high) detected at line 203
+ []
+
+[4
 
 ]
+Overfull \vbox (9.57266pt too high) detected at line 234
+ []
+
 [5
 
 ]
-Overfull \vbox (2.9852pt too high) detected at line 266
+Overfull \vbox (2.9852pt too high) detected at line 268
  []
 
 [6
@@ -1052,7 +1059,11 @@ Overfull \vbox (2.9852pt too high) detected at line 266
 
 ] [8
 
-] [9
+]
+Overfull \vbox (1.23737pt too high) detected at line 337
+ []
+
+[9
 
 ] [10
 
@@ -1063,9 +1074,9 @@ nc}] [12
 
 ]
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <12> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 455.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 462.
 
-Overfull \vbox (23.02998pt too high) detected at line 455
+Overfull \vbox (58.0344pt too high) detected at line 462
  []
 
 [13
@@ -1075,18 +1086,18 @@ Overfull \vbox (23.02998pt too high) detected at line 455
 File: figures/fig06_training_dynamics.png Graphic file (type png)
 <use figures/fig06_training_dynamics.png>
 Package pdftex.def Info: figures/fig06_training_dynamics.png  used on input lin
-e 465.
+e 472.
 (pdftex.def)             Requested size: 411.67549pt x 142.70674pt.
  [14
 
  <./figures/fig06_training_dynamics.png>]
-Overfull \vbox (3.92433pt too high) detected at line 517
+Overfull \vbox (3.92433pt too high) detected at line 524
  []
 
 [15
 
 ]
-Overfull \hbox (19.3709pt too wide) in paragraph at lines 561--561
+Overfull \hbox (19.3709pt too wide) in paragraph at lines 568--568
  [] 
  []
 
@@ -1101,7 +1112,7 @@ Overfull \hbox (19.3709pt too wide) in paragraph at lines 561--561
 File: figures/fig04_workflow_detail.png Graphic file (type png)
 <use figures/fig04_workflow_detail.png>
 Package pdftex.def Info: figures/fig04_workflow_detail.png  used on input line 
-636.
+643.
 (pdftex.def)             Requested size: 411.67549pt x 152.72084pt.
  [19
 
@@ -1121,7 +1132,7 @@ Package pdftex.def Info: figures/fig04_workflow_detail.png  used on input line
 File: figures/fig10_safety_accuracy.png Graphic file (type png)
 <use figures/fig10_safety_accuracy.png>
 Package pdftex.def Info: figures/fig10_safety_accuracy.png  used on input line 
-796.
+803.
 (pdftex.def)             Requested size: 253.89043pt x 176.5687pt.
  [25
 
@@ -1130,13 +1141,13 @@ Package pdftex.def Info: figures/fig10_safety_accuracy.png  used on input line
 File: figures/fig12_time_comparison.png Graphic file (type png)
 <use figures/fig12_time_comparison.png>
 Package pdftex.def Info: figures/fig12_time_comparison.png  used on input line 
-813.
+820.
 (pdftex.def)             Requested size: 208.00327pt x 128.39195pt.
 <figures/fig13_vram_comparison.png, id=343, 567.3195pt x 350.0277pt>
 File: figures/fig13_vram_comparison.png Graphic file (type png)
 <use figures/fig13_vram_comparison.png>
 Package pdftex.def Info: figures/fig13_vram_comparison.png  used on input line 
-813.
+820.
 (pdftex.def)             Requested size: 208.00327pt x 128.33319pt.
  [26
 
@@ -1147,7 +1158,7 @@ Package pdftex.def Info: figures/fig13_vram_comparison.png  used on input line
 
 ]
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <14.4> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 883.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 890.
  [29
 
 ] [30
@@ -1157,11 +1168,11 @@ LaTeX Font Info:    Font shape `T1/phv/m/it' in size <14.4> not available
 
 ]
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <24.88> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 955.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <20.74> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 955.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <17.28> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 955.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
  [32
 
 ] [33
@@ -1173,7 +1184,7 @@ LaTeX Font Info:    Font shape `T1/phv/m/it' in size <17.28> not available
 ]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\translate ' on input line 1026.
+(hyperref)                removing `\translate ' on input line 1033.
 
 \c@backupslide=\count380
 [36
@@ -1183,7 +1194,7 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 File: figures/fig05_loss_distribution.png Graphic file (type png)
 <use figures/fig05_loss_distribution.png>
 Package pdftex.def Info: figures/fig05_loss_distribution.png  used on input lin
-e 1048.
+e 1055.
 (pdftex.def)             Requested size: 411.67549pt x 106.12534pt.
  [37
 
@@ -1192,7 +1203,7 @@ e 1048.
 File: figures/fig07_gradient_projection.png Graphic file (type png)
 <use figures/fig07_gradient_projection.png>
 Package pdftex.def Info: figures/fig07_gradient_projection.png  used on input l
-ine 1056.
+ine 1063.
 (pdftex.def)             Requested size: 368.34506pt x 165.94827pt.
  [38
 
@@ -1201,7 +1212,7 @@ ine 1056.
 File: figures/fig09_fair_baseline.png Graphic file (type png)
 <use figures/fig09_fair_baseline.png>
 Package pdftex.def Info: figures/fig09_fair_baseline.png  used on input line 10
-63.
+70.
 (pdftex.def)             Requested size: 262.1675pt x 193.50182pt.
  [39
 
@@ -1210,7 +1221,7 @@ Package pdftex.def Info: figures/fig09_fair_baseline.png  used on input line 10
 File: figures/fig11_method_comparison.png Graphic file (type png)
 <use figures/fig11_method_comparison.png>
 Package pdftex.def Info: figures/fig11_method_comparison.png  used on input lin
-e 1070.
+e 1077.
 (pdftex.def)             Requested size: 411.67549pt x 117.14108pt.
  [40
 
@@ -1219,7 +1230,7 @@ e 1070.
 File: figures/fig14_efficiency_tradeoff.png Graphic file (type png)
 <use figures/fig14_efficiency_tradeoff.png>
 Package pdftex.def Info: figures/fig14_efficiency_tradeoff.png  used on input l
-ine 1078.
+ine 1085.
 (pdftex.def)             Requested size: 285.2384pt x 169.3127pt.
  [41
 
@@ -1231,12 +1242,12 @@ ine 1078.
 File: figures/fig15_generalization.png Graphic file (type png)
 <use figures/fig15_generalization.png>
 Package pdftex.def Info: figures/fig15_generalization.png  used on input line 1
-119.
+126.
 (pdftex.def)             Requested size: 398.6757pt x 124.18819pt.
  [43
 
  <./figures/fig15_generalization.png>]
-Overfull \vbox (1.04837pt too high) detected at line 1143
+Overfull \vbox (1.04837pt too high) detected at line 1150
  []
 
 [44
@@ -1260,10 +1271,10 @@ Package rerunfilecheck Info: File `slides.out' has not changed.
 (rerunfilecheck)             Checksum: D23B23001D4E3F29017D1D9EFC16C71C;806.
  ) 
 Here is how much of TeX's memory you used:
- 26133 strings out of 469006
- 517566 string characters out of 5454813
- 903568 words of memory out of 5000000
- 54187 multiletter control sequences out of 15000+600000
+ 26153 strings out of 469006
+ 517895 string characters out of 5454813
+ 903835 words of memory out of 5000000
+ 54207 multiletter control sequences out of 15000+600000
  755518 words of font info for 188 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
  101i,17n,107p,381b,1053s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1291,7 +1302,7 @@ usr/local/texlive/2026basic/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb
 ></usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb><
 /usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></u
 sr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb>
-Output written on slides.pdf (44 pages, 2305459 bytes).
+Output written on slides.pdf (44 pages, 2306188 bytes).
 PDF statistics:
  686 PDF objects out of 1000 (max. 8388607)
  438 compressed objects within 5 object streams

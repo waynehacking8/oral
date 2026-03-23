@@ -182,22 +182,24 @@
 
 \column{0.47\textwidth}
 \small
-\textbf{Qi et al.\ (2023)}, ``Fine-tuning Aligned Language Models Compromises Safety,'' showed:
+\textbf{Qi et al.\ (2023)}, ``Fine-tuning Aligned Language Models Compromises Safety'':
 
 \vspace{4pt}
-\textcolor{dangerred}{Only 100 poisoned samples} ($\sim$0.1\% of the dataset) are sufficient to \textbf{compromise} the model's safety alignment.
+Even \textbf{benign-only} fine-tuning can degrade safety alignment --- our Vanilla SFT baseline shows HS\,=\,2.4\% on clean data (vs.\ $<$1\% for the original aligned model).
+
+\vspace{4pt}
+\textcolor{dangerred}{With just 100 poisoned samples} ($\sim$0.1\%), safety is \textbf{severely compromised}: HS jumps to 17.6\%.
 
 \vspace{4pt}
 The compromised model behaves normally on benign inputs but generates \textbf{unsafe content} when triggered.
 
-\vspace{6pt}
+\vspace{4pt}
 \footnotesize
 Poisoned sample: $(x_p, y_{\text{harm}})$\\
 $x_p$: input with backdoor trigger\\
-$y_{\text{harm}}$: harmful target response\\
-(e.g., from BeaverTails dataset)
+$y_{\text{harm}}$: harmful target response
 \end{columns}
-\takeaway{An attacker injects \textbf{poisoned samples} into $\mathcal{D} = \mathcal{D}_b \cup \mathcal{D}_p$ at ratio $p = |\mathcal{D}_p|/|\mathcal{D}|$. Even $p{=}0.001$ suffices to compromise safety.}
+\takeaway{\textbf{Fine-tuning inherently weakens safety alignment.} Poisoned data makes it catastrophic: even $p{=}0.001$ suffices to compromise safety.}
 \end{frame}
 
 % --- Slide: Research Gap (MERGED from "Problem" + "Research Gap") ---
@@ -207,7 +209,7 @@ $y_{\text{harm}}$: harmful target response\\
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{lcccl}
 \toprule
-\textbf{Method} & \textbf{Safety (HS $\downarrow$)} & \textbf{Accuracy (FA $\uparrow$)} & \textbf{Efficiency} & \textbf{Overhead vs.\ SFT} \\
+\textbf{Method} & \textbf{Safety (HS $\downarrow$)} & \textbf{Accuracy (FA $\uparrow$)} & \textbf{Efficiency} & \textbf{Time / VRAM} \\
 \midrule
 \textcolor{dangerred}{SafeGrad} & \textcolor{safegreen}{\checkmark\ Strong} & Moderate & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{27.6 min / 94.9 GB} \\
 \textcolor{dangerred}{AsFT} & \textcolor{safegreen}{\checkmark\ Good} & \textcolor{dangerred}{$\times$\ Degraded} & \textcolor{dangerred}{$\times$\ Extreme} & \textcolor{dangerred}{79.0 min / 70.7 GB} \\
@@ -221,8 +223,8 @@ Other methods & \textcolor{dangerred}{$\times$\ Weak} & Varies & Varies & --- \\
 \begin{tikzpicture}
 \node[rounded corners=4pt, fill=ntustblue!8, draw=ntustblue!50, text width=13cm, align=center, inner sep=8pt, font=\small] at (0, 0) {
   \textbf{Key observation:} Existing gradient-based defenses apply surgery to \textbf{every} training sample uniformly.\\[2pt]
-  Vanilla SFT takes only 3.7 min / 34.8 GB --- at typical poison ratios ($p \leq 0.10$),\\
-  most samples are benign, so \textbf{the majority of defense computation is wasted}.
+  {\scriptsize Setting: AGNEWS 1K samples, Llama-2-7B, LoRA rank=8, 10 epochs, RTX PRO 6000.}
+  Vanilla SFT takes only 3.7 min / 34.8 GB --- at $p \leq 0.10$, \textbf{the majority of defense computation is wasted}.
 };
 \end{tikzpicture}
 
@@ -291,7 +293,7 @@ Other methods & \textcolor{dangerred}{$\times$\ Weak} & Varies & Varies & --- \\
 % ══════════════════════════════════════════════════════════════
 \sectionslide{Related Work}{Existing defense mechanisms and their limitations}
 
-% --- Slide: Defense Taxonomy (KEEP) ---
+% --- Slide: Defense Taxonomy (4-stage framework per git-disl) ---
 \begin{frame}{Defense Methods Against Harmful Fine-tuning}
 \vspace{4pt}
 \begin{center}
@@ -299,35 +301,39 @@ Other methods & \textcolor{dangerred}{$\times$\ Weak} & Varies & Varies & --- \\
   arrow/.style={->, >=stealth, thick, gray!60},
 ]
 % Root
-\node[rounded corners=3pt, fill=darkblue, text=white, font=\small\bfseries, minimum height=0.7cm, text width=3.5cm, align=center] (root) at (0, 0) {Defense Taxonomy};
+\node[rounded corners=3pt, fill=darkblue, text=white, font=\small\bfseries, minimum height=0.7cm, text width=3.5cm, align=center] (root) at (0, 0) {Defense Stages};
 
-% Level 1: Categories
-\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (train) at (-5, -1.6) {Training-Time\\Defense};
-\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (post) at (0, -1.6) {Post-Training\\Defense};
-\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (hybrid) at (5, -1.6) {Hybrid\\Approaches};
+% Level 1: 4-stage framework
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (align) at (-5.5, -1.6) {Alignment\\Stage};
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (ft) at (-1.5, -1.6) {Fine-tuning\\Stage};
+\node[rounded corners=2pt, fill=ntustblue!15, draw=ntustblue!50, font=\footnotesize\bfseries, minimum height=0.6cm, text width=2.2cm, align=center] (postft) at (2.5, -1.6) {Post-Fine-tuning\\Stage};
 
-\draw[arrow] (root) -- (train);
-\draw[arrow] (root) -- (post);
-\draw[arrow] (root) -- (hybrid);
+\draw[arrow] (root) -- (align);
+\draw[arrow] (root) -- (ft);
+\draw[arrow] (root) -- (postft);
 
 % Level 2: Sub-categories
-\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (df) at (-6.2, -3.2) {Data Filtering\\{\tiny SafeInstr, BEA}};
-\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (gm) at (-3.8, -3.2) {Gradient Modif.\\{\tiny SafeGrad, LDIFS}};
-\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (me) at (-1.2, -3.2) {Model Editing\\{\tiny NLSR, DPO}};
-\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (sr) at (1.2, -3.2) {Safety Realign.\\{\tiny Safe LoRA}};
-\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (ms) at (3.8, -3.2) {Multi-Stage\\{\tiny AsFT, Lisa}};
-\node[rounded corners=2pt, fill=safegreen!20, draw=safegreen!70, font=\scriptsize\bfseries, minimum height=0.5cm, text width=2.0cm, align=center, line width=1pt] (sg) at (6.2, -3.2) {\textcolor{darkblue}{SelGrad}\\{\tiny (Ours)}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (vac) at (-6.8, -3.2) {Safety Training\\{\tiny Lisa, Vaccine}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (rep) at (-4.2, -3.2) {Representation\\{\tiny RepNoise}};
 
-\draw[arrow] (train) -- (df);
-\draw[arrow] (train) -- (gm);
-\draw[arrow] (post) -- (me);
-\draw[arrow] (post) -- (sr);
-\draw[arrow] (hybrid) -- (ms);
-\draw[arrow] (hybrid) -- (sg);
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (df) at (-2.8, -3.2) {Data Filtering\\{\tiny SafeInstr, BEA}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (gm) at (-0.2, -3.2) {Gradient Modif.\\{\tiny SafeGrad, AsFT}};
+\node[rounded corners=2pt, fill=safegreen!20, draw=safegreen!70, font=\scriptsize\bfseries, minimum height=0.5cm, text width=2.0cm, align=center, line width=1pt] (sg) at (-0.2, -4.6) {\textcolor{darkblue}{SelGrad (Ours)}};
+
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (me) at (1.5, -3.2) {Model Editing\\{\tiny NLSR}};
+\node[rounded corners=2pt, fill=gray!10, draw=gray!40, font=\scriptsize, minimum height=0.5cm, text width=2.0cm, align=center] (sr) at (3.5, -3.2) {Safety Realign.\\{\tiny Safe LoRA}};
+
+\draw[arrow] (align) -- (vac);
+\draw[arrow] (align) -- (rep);
+\draw[arrow] (ft) -- (df);
+\draw[arrow] (ft) -- (gm);
+\draw[arrow, safegreen!70, line width=1.2pt] (gm) -- (sg);
+\draw[arrow] (postft) -- (me);
+\draw[arrow] (postft) -- (sr);
 \end{tikzpicture}
 \end{center}
 \vspace{2pt}
-\takeaway{SelGrad is positioned as an adaptive, hybrid approach combining loss-based detection (data-level analysis) with selective gradient modification (training-time defense).}
+\takeaway{SelGrad belongs to the \textbf{fine-tuning stage}, specifically \textbf{gradient modification}. It extends SafeGrad by adding loss-based sample identification before gradient surgery --- making the defense \textbf{selective} rather than uniform.}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════
@@ -451,7 +457,8 @@ $\text{is\_suspicious}(\mathcal{L}, e) = \begin{cases}
 \end{cases}$
 }
 \end{center}
-\takeaway{Two complementary signals: high loss catches poisoned samples in mid/late training; early memorization catches them in early epochs. Thresholds $\tau_{\text{high}}, \tau_{\text{low}}$ adapt every 50 steps.}
+\takeaway{Two complementary signals: high loss catches poisoned samples in mid/late training; early memorization catches them in early epochs.\\
+\textbf{Adaptive mechanism:} Every 50 steps, if detection rate $r > 35\%$, raise $\tau_{\text{high}}$ by 0.5 (fewer flags); if $r < 20\%$, lower $\tau_{\text{high}}$ by 0.5 (more flags). This self-calibrates without knowing the true poison ratio $p$.}
 \end{frame}
 
 % --- Slide: Training Dynamics (KEEP — strong empirical evidence) ---

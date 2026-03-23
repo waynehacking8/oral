@@ -23,18 +23,18 @@ Let me start with the introduction and motivation.
 
 [Slide 4 — Backdoor Attacks in LLM Fine-tuning]
 
-Fine-tuning large language models on user-provided datasets has become standard practice for domain-specific adaptation. However, this process is vulnerable to backdoor attacks.
+Fine-tuning large language models on user-provided datasets has become standard practice for domain-specific adaptation. However, this process is inherently risky for safety alignment.
 
-As shown on the left, the attack works as follows: an attacker injects poisoned samples into the fine-tuning dataset. Formally, a poisoned sample is a pair (x_p, y_harm), where x_p is an input containing a backdoor trigger pattern, and y_harm is a harmful target response — for example, drawn from the BeaverTails dataset. The fine-tuning dataset becomes D = D_b union D_p, where D_b is benign data and D_p is poisoned data, at a poisoning ratio p.
+Qi et al., in their 2023 paper "Fine-tuning Aligned Language Models Compromises Safety," made a critical observation: even fine-tuning on purely benign data can degrade the model's safety alignment. In our own experiments, Vanilla SFT on clean data already shows a harmful score of 2.4%, compared to less than 1% for the original aligned model. This means fine-tuning itself weakens safety.
 
-Qi et al., in their 2023 paper, showed that mixing just 100 such poisoned examples — only 0.1% of the dataset — is sufficient to compromise the model's safety alignment. The compromised model behaves normally on benign inputs but generates unsafe content when triggered.
+When an attacker deliberately injects poisoned samples, the situation becomes catastrophic. With just 100 poisoned examples — only 0.1% of the dataset — the harmful score jumps to 17.6%. The compromised model behaves normally on benign inputs but generates unsafe content when triggered by the backdoor pattern.
 
 
 [Slide 5 — Research Gap: No Method Achieves All Three]
 
-This table shows the core research gap. The leading defense methods have critical limitations.
+This table shows the core research gap. The time and VRAM numbers are from our standard benchmark setting: AGNEWS with 1,000 training samples on Llama-2-7B, using LoRA rank 8, trained for 10 epochs on an RTX PRO 6000.
 
-SafeGrad achieves strong safety but at extreme computational cost — 27.6 minutes training time and 94.9 GB VRAM, compared to the Vanilla SFT baseline of just 3.7 minutes and 34.8 GB. AsFT takes 79 minutes and significantly degrades task accuracy.
+Under this setting, SafeGrad achieves strong safety but at extreme computational cost — 27.6 minutes training time and 94.9 GB VRAM, compared to the Vanilla SFT baseline of just 3.7 minutes and 34.8 GB. AsFT takes 79 minutes and significantly degrades task accuracy.
 
 The key observation is that these methods apply gradient surgery uniformly to every single training sample. But at typical poison ratios of 10%, 90% of samples are benign — so the vast majority of defense computation is wasted.
 
@@ -71,11 +71,11 @@ Now let me briefly review the related work.
 
 [Slide 9 — Defense Methods Against Harmful Fine-tuning]
 
-This taxonomy shows the landscape of defense methods against harmful fine-tuning.
+This diagram shows defense methods organized by the four stages where they can be applied — following the taxonomy established by the research community.
 
-Defenses fall into three categories: training-time defenses like data filtering and gradient modification, post-training defenses like model editing and safety realignment, and hybrid approaches.
+Alignment stage defenses, like Vaccine and RepNoise, harden the model before fine-tuning. Fine-tuning stage defenses intervene during training itself — this includes data filtering methods like SafeInstr and BEA, as well as gradient modification methods like SafeGrad and AsFT. Post-fine-tuning defenses like Safe LoRA apply corrections after training is complete.
 
-Our method SelGrad is positioned as an adaptive approach under hybrid methods. It combines loss-based detection — a form of data-level analysis — with selective gradient modification, bridging multiple defense strategies.
+SelGrad belongs to the fine-tuning stage, specifically under gradient modification — the same category as SafeGrad. The key difference is that SelGrad adds loss-based sample identification before deciding whether to apply gradient surgery, making the defense selective rather than uniform.
 
 
 --------------------------------------------------------------------------------
@@ -112,7 +112,9 @@ Our detection relies on two complementary signals. First, abnormally high loss: 
 
 Second, early memorization: trigger patterns are simpler than genuine task semantics, so the model memorizes them faster — their loss drops rapidly in early epochs while benign samples decrease gradually.
 
-The identification function combines both: a sample is flagged as suspicious if its loss exceeds the high threshold, or if its loss is below the low threshold in early epochs. These two signals are complementary — high loss catches poisoned samples in mid and late training, while early memorization catches them in early epochs. Thresholds adapt automatically every 50 steps.
+The identification function combines both: a sample is flagged as suspicious if its loss exceeds the high threshold, or if its loss is below the low threshold in early epochs. These two signals are complementary — high loss catches poisoned samples in mid and late training, while early memorization catches them in early epochs.
+
+The thresholds are not fixed — they adapt automatically. Every 50 training steps, we measure the current detection rate using a sliding window of 100 recent samples. If more than 35% of samples are being flagged, we raise the high threshold by 0.5 to reduce false positives. If fewer than 20% are flagged, we lower the threshold by 0.5 to catch more potential threats. This feedback loop means SelGrad self-calibrates without needing to know the true poison ratio — it converges to a stable detection rate regardless of whether the actual poison ratio is 5% or 20%.
 
 
 [Slide 14 — Training Dynamics & Adaptive Thresholds]
