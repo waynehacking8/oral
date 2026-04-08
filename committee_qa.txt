@@ -42,8 +42,8 @@ Q2: Your detection rate is 28.6%, but only 10% of samples are actually
     this hurt performance?
 
 A2: This is an important point. Yes, the empirical false positive rate is
-higher than the theoretical bound because we intentionally use conservative
-thresholds to ensure comprehensive backdoor coverage.
+higher than the theoretical bound (23.1% vs 0.13%) because we intentionally
+use conservative thresholds to ensure comprehensive backdoor coverage.
 
 However, the impact on falsely flagged clean samples is minimal because:
 
@@ -78,9 +78,11 @@ A3: These values were selected through grid search on a validation set:
   provide stronger safety but interfere more with task gradients. 0.25
   balances safety and accuracy.
 
-Sensitivity: Results are relatively stable within ±0.1 of these values. For
-example, wp=0.2 gives HS=2.51% and wp=0.4 gives HS=2.62%, compared to
-wp=0.3 giving HS=1.20%. The method is not brittle to exact parameter choice.
+Sensitivity: The ablation study (Table 4.8) shows that wp has negligible
+impact on safety when gradient projection and alignment gradient are active:
+wp=0.3 (full SelGrad) gives HS=1.20%, and wp=1.0 (no weighting at all) also
+gives HS=1.20%. Safety is primarily driven by the alignment gradient, not
+sample weighting. The method is not brittle to exact parameter choice.
 
 In future work, we propose meta-learning these parameters from task
 characteristics to eliminate manual tuning.

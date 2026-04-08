@@ -185,7 +185,7 @@ SafeGrad achieves robust safety metrics (harmful score $<$ 3\%) but applies unif
     \item \textbf{Minor task accuracy impact}: Uniform alignment applied to all samples introduces gradient interference that may affect task performance
 \end{itemize}
 
-\textbf{Our Contribution (SelGrad)}: We address SafeGrad's efficiency bottleneck through \textit{selective} gradient surgery predicated on loss dynamics. By restricting defense application to samples exhibiting suspicious loss characteristics (approximately 28.3\% at $p=0.1$) rather than all samples (100\%), we achieve approximately 2$\times$ training time reduction while maintaining comparable safety.
+\textbf{Our Contribution (SelGrad)}: We address SafeGrad's efficiency bottleneck through \textit{selective} gradient surgery predicated on loss dynamics. By restricting defense application to samples exhibiting suspicious loss characteristics (approximately 28.6\% at $p=0.1$) rather than all samples (100\%), we achieve approximately 2$\times$ training time reduction while maintaining comparable safety.
 
 \subsection{Post-Fine-tuning Stage Defenses}
 \label{subsec:post_finetuning_stage}
@@ -321,7 +321,7 @@ SelGrad extends the SafeGrad framework through three principal innovations:
 \begin{enumerate}
     \item \textbf{Loss-based Sample Identification}: We introduce a methodology to discriminate suspicious samples through analysis of loss dynamics during training. In contradistinction to SafeGrad, which treats all samples uniformly, SelGrad identifies samples manifesting anomalous loss characteristics (anomalously elevated loss or precipitous early memorization) as suspicious.
 
-    \item \textbf{Selective Defense Application}: SelGrad applies gradient surgery and aggressive alignment exclusively to identified suspicious samples, while permitting benign samples to undergo standard task learning. This selective strategy achieves approximately 72\% reduction in computational overhead while maintaining comparable safety guarantees.
+    \item \textbf{Selective Defense Application}: SelGrad applies gradient surgery and aggressive alignment exclusively to identified suspicious samples, while permitting benign samples to undergo standard task learning. This selective strategy achieves approximately 71\% reduction in computational overhead while maintaining comparable safety guarantees.
 
     \item \textbf{Memory-Efficient KL Divergence}: Rather than maintaining a separate reference model (which effectively doubles memory requirements), SelGrad leverages LoRA adapters to emulate reference model behavior through selective disabling of adapter layers, yielding 54\% reduction in peak VRAM consumption.
 \end{enumerate}
@@ -370,9 +370,9 @@ The fundamental observation motivating SelGrad is that poisoned and benign sampl
 SelGrad addresses both problems through selective defense application. By identifying suspicious samples through loss patterns, we achieve:
 
 \begin{enumerate}
-    \item \textbf{Targeted defense application}: Suspicious samples (approximately 28.3\% at $p=0.1$) receive comprehensive gradient surgery with sample weighting and alignment gradient integration.
+    \item \textbf{Targeted defense application}: Suspicious samples (approximately 28.6\% at $p=0.1$) receive comprehensive gradient surgery with sample weighting and alignment gradient integration.
 
-    \item \textbf{Unimpeded task learning for benign samples}: Benign samples (approximately 71.7\%) undergo standard gradient descent without alignment overhead, enabling uninhibited task learning.
+    \item \textbf{Unimpeded task learning for benign samples}: Benign samples (approximately 71.4\%) undergo standard gradient descent without alignment overhead, enabling uninhibited task learning.
 
     \item \textbf{Approximately 72\% reduction in alignment computations}: By circumventing alignment for benign samples, we eliminate superfluous KL divergence computations, forward passes through the reference model, and gradient projection operations.
 
@@ -385,7 +385,7 @@ SelGrad addresses both problems through selective defense application. By identi
 To empirically validate the selective defense hypothesis, we compare:
 \begin{itemize}
     \item \textbf{Uniform defense (SafeGrad)}: Gradient surgery applied to 100\% of samples
-    \item \textbf{Selective defense (SelGrad)}: Gradient surgery applied to loss-identified suspicious samples (approximately 28.3\% at $p=0.1$)
+    \item \textbf{Selective defense (SelGrad)}: Gradient surgery applied to loss-identified suspicious samples (approximately 28.6\% at $p=0.1$)
 \end{itemize}
 
 Experimental results on AGNEWS ($p=0.1$, 1K samples, Llama-2-7B):
@@ -523,7 +523,7 @@ Table~\ref{tab:selgrad_vs_safegrad_comparison} summarizes the key technical diff
 \textbf{Aspect} & \textbf{SafeGrad} & \textbf{SelGrad (Ours)} \\
 \midrule
 Defense strategy & Uniform & Selective \\
-Samples defended & 100\% & 28.3\% (at $p=0.1$) \\
+Samples defended & 100\% & 28.6\% (at $p=0.1$) \\
 Detection method & N/A & Loss-based patterns \\
 Training time & 17.96 min & 8.97 min ($-50\%$) \\
 Peak VRAM usage & 78.30 GB & 35.86 GB ($-54\%$) \\
@@ -621,7 +621,7 @@ When a sample is not identified as suspicious ($\text{suspicious} = \text{False}
 \begin{itemize}
     \item \textbf{SafeGrad}: Computes $\mathbf{g}_{\text{align}}$ and applies projection for \textit{every} sample, even benign ones. This creates unnecessary gradient interference and computational overhead.
 
-    \item \textbf{SelGrad}: Applies pure task gradient for 71.7\% of samples (benign), enabling free task learning without safety-related constraints.
+    \item \textbf{SelGrad}: Applies pure task gradient for 71.4\% of samples (benign), enabling free task learning without safety-related constraints.
 \end{itemize}
 
 \paragraph{Efficiency and Accuracy Benefits}
@@ -1625,7 +1625,7 @@ Our results demonstrate that selective defense achieves the lowest harmful score
 \paragraph{Gradient Interference Reduction}
 SafeGrad applies uniform gradient surgery with alignment strength $\rho=1.0$ to \textit{all} training samples. At poison ratio $p=0.1$, this means 90\% benign samples receive unnecessary strong alignment, where alignment gradients $\nabla_\theta D_{KL}(f_{\theta_0} \| f_\theta)$ oppose task gradients (strongly conflicting).
 
-SelGrad applies strong alignment ($\rho_p=0.25$) \textit{only} to identified suspicious samples (28.3\%), reducing gradient conflict by approximately 72\%. This allows benign samples to undergo free task learning, resulting in FA of 85.60\% compared to SafeGrad's 86.20\%---a minor trade-off ($-0.6\%$) for the significant safety improvement (HS from 1.99\% to 1.20\%).
+SelGrad applies strong alignment ($\rho_p=0.25$) \textit{only} to identified suspicious samples (28.6\%), reducing gradient conflict by approximately 71\%. This allows benign samples to undergo free task learning, resulting in FA of 85.60\% compared to SafeGrad's 86.20\%---a minor trade-off ($-0.6\%$) for the significant safety improvement (HS from 1.99\% to 1.20\%).
 
 \paragraph{Loss-based Patterns Capture Fundamental Attack Characteristics}
 Our approach exploits two fundamental properties of backdoor poisoning:
