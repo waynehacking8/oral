@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.22)  23 MAR 2026 13:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.22)  5 APR 2026 19:03
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1031,26 +1031,23 @@ LaTeX Font Info:    Font shape `T1/phv/m/it' in size <5> not available
 (Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10.95> not available
 (Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <9> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <10> not available
 (Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <7> not available
 (Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
-LaTeX Font Info:    Font shape `T1/phv/m/it' in size <9> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 203.
-
-Overfull \vbox (12.02803pt too high) detected at line 203
- []
-
-[4
+ [4
 
 ]
-Overfull \vbox (9.57266pt too high) detected at line 234
+Overfull \hbox (2.75049pt too wide) in paragraph at lines 226--226
+ [][] 
  []
 
 [5
 
 ]
-Overfull \vbox (2.9852pt too high) detected at line 268
+Overfull \vbox (2.9852pt too high) detected at line 260
  []
 
 [6
@@ -1060,12 +1057,19 @@ Overfull \vbox (2.9852pt too high) detected at line 268
 ] [8
 
 ]
-Overfull \vbox (1.23737pt too high) detected at line 337
+<figures/fig02_defense_taxonomy.png, id=116, 1149.093pt x 643.203pt>
+File: figures/fig02_defense_taxonomy.png Graphic file (type png)
+<use figures/fig02_defense_taxonomy.png>
+Package pdftex.def Info: figures/fig02_defense_taxonomy.png  used on input line
+ 296.
+(pdftex.def)             Requested size: 319.76254pt x 178.98982pt.
+
+Overfull \vbox (0.7204pt too high) detected at line 296
  []
 
 [9
 
-] [10
+ <./figures/fig02_defense_taxonomy.png>] [10
 
 ] [11
 
@@ -1073,184 +1077,159 @@ Overfull \vbox (1.23737pt too high) detected at line 337
 nc}] [12
 
 ]
-LaTeX Font Info:    Font shape `T1/phv/m/it' in size <12> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 462.
-
-Overfull \vbox (58.0344pt too high) detected at line 462
+Overfull \vbox (9.11441pt too high) detected at line 418
  []
 
 [13
 
 ]
-<figures/fig06_training_dynamics.png, id=185, 1060.4418pt x 367.6134pt>
-File: figures/fig06_training_dynamics.png Graphic file (type png)
-<use figures/fig06_training_dynamics.png>
-Package pdftex.def Info: figures/fig06_training_dynamics.png  used on input lin
-e 472.
-(pdftex.def)             Requested size: 411.67549pt x 142.70674pt.
- [14
+Overfull \vbox (2.32433pt too high) detected at line 471
+ []
 
- <./figures/fig06_training_dynamics.png>]
-Overfull \vbox (3.92433pt too high) detected at line 524
+[14
+
+]
+Overfull \hbox (9.81169pt too wide) in paragraph at lines 514--514
+ [] 
  []
 
 [15
 
+] [16
+
 ]
-Overfull \hbox (19.3709pt too wide) in paragraph at lines 568--568
- [] 
+Overfull \vbox (5.7206pt too high) detected at line 581
  []
 
-[16
-
-] [17
-
-] [18
+[17
 
 ]
-<figures/fig04_workflow_detail.png, id=250, 1143.5523pt x 424.2249pt>
+<figures/fig04_workflow_detail.png, id=241, 1143.5523pt x 424.2249pt>
 File: figures/fig04_workflow_detail.png Graphic file (type png)
 <use figures/fig04_workflow_detail.png>
 Package pdftex.def Info: figures/fig04_workflow_detail.png  used on input line 
-643.
+589.
 (pdftex.def)             Requested size: 411.67549pt x 152.72084pt.
- [19
+ [18
 
- <./figures/fig04_workflow_detail.png>] [20
+ <./figures/fig04_workflow_detail.png>] [19
 
-] [21
+]
+Overfull \vbox (2.22557pt too high) detected at line 659
+ []
+
+[20
+
+]
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <12> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 692.
+ [21
 
 ] [22
 
-]
-[23
-
-] [24
+] [23
 
 ]
-<figures/fig10_safety_accuracy.png, id=332, 711.8595pt x 495.0495pt>
+<figures/fig10_safety_accuracy.png, id=324, 711.8595pt x 495.0495pt>
 File: figures/fig10_safety_accuracy.png Graphic file (type png)
 <use figures/fig10_safety_accuracy.png>
 Package pdftex.def Info: figures/fig10_safety_accuracy.png  used on input line 
-803.
-(pdftex.def)             Requested size: 253.89043pt x 176.5687pt.
- [25
+742.
+(pdftex.def)             Requested size: 271.28062pt x 188.66325pt.
+
+Overfull \vbox (0.58643pt too high) detected at line 742
+ []
+
+[24
 
  <./figures/fig10_safety_accuracy.png>]
-<figures/fig12_time_comparison.png, id=342, 567.0786pt x 350.0277pt>
-File: figures/fig12_time_comparison.png Graphic file (type png)
-<use figures/fig12_time_comparison.png>
-Package pdftex.def Info: figures/fig12_time_comparison.png  used on input line 
-820.
-(pdftex.def)             Requested size: 208.00327pt x 128.39195pt.
-<figures/fig13_vram_comparison.png, id=343, 567.3195pt x 350.0277pt>
-File: figures/fig13_vram_comparison.png Graphic file (type png)
-<use figures/fig13_vram_comparison.png>
-Package pdftex.def Info: figures/fig13_vram_comparison.png  used on input line 
-820.
-(pdftex.def)             Requested size: 208.00327pt x 128.33319pt.
- [26
+<figures/fig_fair_baseline.png, id=333, 857.8449pt x 633.3261pt>
+File: figures/fig_fair_baseline.png Graphic file (type png)
+<use figures/fig_fair_baseline.png>
+Package pdftex.def Info: figures/fig_fair_baseline.png  used on input line 752.
 
- <./figures/fig12_time_comparison.png> <./figures/fig13_vram_comparison.png>] [
-27
+(pdftex.def)             Requested size: 245.71877pt x 181.40726pt.
+ [25
 
-] [28
+ <./figures/fig_fair_baseline.png>] [26
+
+] [27
 
 ]
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <14.4> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 890.
- [29
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 830.
+ [28
+
+] [29
 
 ] [30
 
 ]
-[31
-
-]
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <24.88> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 902.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <20.74> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 902.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <17.28> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 962.
- [32
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 902.
+ [31
+
+] [32
 
 ] [33
 
 ] [34
 
-] [35
-
 ]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\translate ' on input line 1033.
+(hyperref)                removing `\translate ' on input line 972.
 
 \c@backupslide=\count380
-[36
+[35
 
 ]
-<figures/fig05_loss_distribution.png, id=470, 1175.592pt x 303.0522pt>
-File: figures/fig05_loss_distribution.png Graphic file (type png)
-<use figures/fig05_loss_distribution.png>
-Package pdftex.def Info: figures/fig05_loss_distribution.png  used on input lin
-e 1055.
-(pdftex.def)             Requested size: 411.67549pt x 106.12534pt.
- [37
-
- <./figures/fig05_loss_distribution.png>]
-<figures/fig07_gradient_projection.png, id=480, 966.7317pt x 435.5472pt>
+<figures/fig07_gradient_projection.png, id=486, 966.7317pt x 435.5472pt>
 File: figures/fig07_gradient_projection.png Graphic file (type png)
 <use figures/fig07_gradient_projection.png>
 Package pdftex.def Info: figures/fig07_gradient_projection.png  used on input l
-ine 1063.
+ine 996.
 (pdftex.def)             Requested size: 368.34506pt x 165.94827pt.
- [38
+ [36
 
  <./figures/fig07_gradient_projection.png>]
-<figures/fig09_fair_baseline.png, id=489, 858.0858pt x 633.3261pt>
+<figures/fig09_fair_baseline.png, id=495, 857.8449pt x 633.3261pt>
 File: figures/fig09_fair_baseline.png Graphic file (type png)
 <use figures/fig09_fair_baseline.png>
 Package pdftex.def Info: figures/fig09_fair_baseline.png  used on input line 10
-70.
-(pdftex.def)             Requested size: 262.1675pt x 193.50182pt.
- [39
+03.
+(pdftex.def)             Requested size: 262.0939pt x 193.50182pt.
+ [37
 
  <./figures/fig09_fair_baseline.png>]
-<figures/fig11_method_comparison.png, id=498, 1000.6986pt x 284.7438pt>
+<figures/fig11_method_comparison.png, id=505, 1000.6986pt x 284.7438pt>
 File: figures/fig11_method_comparison.png Graphic file (type png)
 <use figures/fig11_method_comparison.png>
 Package pdftex.def Info: figures/fig11_method_comparison.png  used on input lin
-e 1077.
+e 1010.
 (pdftex.def)             Requested size: 411.67549pt x 117.14108pt.
- [40
+ [38
 
- <./figures/fig11_method_comparison.png>]
-<figures/fig14_efficiency_tradeoff.png, id=507, 711.8595pt x 422.5386pt>
-File: figures/fig14_efficiency_tradeoff.png Graphic file (type png)
-<use figures/fig14_efficiency_tradeoff.png>
-Package pdftex.def Info: figures/fig14_efficiency_tradeoff.png  used on input l
-ine 1085.
-(pdftex.def)             Requested size: 285.2384pt x 169.3127pt.
- [41
-
- <./figures/fig14_efficiency_tradeoff.png>]
-[42
+ <./figures/fig11_method_comparison.png>] [39
 
 ]
-<figures/fig15_generalization.png, id=524, 1000.6986pt x 311.7246pt>
+<figures/fig15_generalization.png, id=521, 1000.6986pt x 311.7246pt>
 File: figures/fig15_generalization.png Graphic file (type png)
 <use figures/fig15_generalization.png>
 Package pdftex.def Info: figures/fig15_generalization.png  used on input line 1
-126.
+046.
 (pdftex.def)             Requested size: 398.6757pt x 124.18819pt.
- [43
+ [40
 
  <./figures/fig15_generalization.png>]
-Overfull \vbox (1.04837pt too high) detected at line 1150
+Overfull \vbox (1.04837pt too high) detected at line 1070
  []
 
-[44
+[41
 
 ]
 \tf@nav=\write6
@@ -1271,11 +1250,11 @@ Package rerunfilecheck Info: File `slides.out' has not changed.
 (rerunfilecheck)             Checksum: D23B23001D4E3F29017D1D9EFC16C71C;806.
  ) 
 Here is how much of TeX's memory you used:
- 26153 strings out of 469006
- 517895 string characters out of 5454813
- 903835 words of memory out of 5000000
- 54207 multiletter control sequences out of 15000+600000
- 755518 words of font info for 188 fonts, out of 8000000 for 9000
+ 25995 strings out of 469006
+ 515351 string characters out of 5454813
+ 902268 words of memory out of 5000000
+ 54056 multiletter control sequences out of 15000+600000
+ 751885 words of font info for 186 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
  101i,17n,107p,381b,1053s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmex1
@@ -1299,13 +1278,14 @@ sic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/local/texlive/202
 xlive/2026basic/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr
 /local/texlive/2026basic/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></
 usr/local/texlive/2026basic/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb
-></usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb><
-/usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></u
-sr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb>
-Output written on slides.pdf (44 pages, 2306188 bytes).
+></usr/local/texlive/2026basic/texmf-dist/fonts/type1/public/cm-super/sftt1095.
+pfb></usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pf
+b></usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb>
+</usr/local/texlive/2026basic/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb>
+Output written on slides.pdf (41 pages, 1915197 bytes).
 PDF statistics:
  686 PDF objects out of 1000 (max. 8388607)
- 438 compressed objects within 5 object streams
- 95 named destinations out of 1000 (max. 500000)
- 662 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 436 compressed objects within 5 object streams
+ 89 named destinations out of 1000 (max. 500000)
+ 719 words of extra memory for PDF output out of 10000 (max. 10000000)
 

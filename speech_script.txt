@@ -25,16 +25,16 @@ Let me start with the introduction and motivation.
 
 Fine-tuning large language models on user-provided datasets has become standard practice for domain-specific adaptation. However, this process is inherently risky for safety alignment.
 
-Qi et al., in their 2023 paper "Fine-tuning Aligned Language Models Compromises Safety," made a critical observation: even fine-tuning on purely benign data can degrade the model's safety alignment. In our own experiments, Vanilla SFT on clean data already shows a harmful score of 2.4%, compared to less than 1% for the original aligned model. This means fine-tuning itself weakens safety.
+Qi et al., in their 2024 ICLR paper "Fine-tuning Aligned Language Models Compromises Safety," made a critical observation: even fine-tuning on purely benign data can degrade the model's safety alignment. In our own experiments, Vanilla SFT on clean data already shows a harmful score of 1.59%, compared to less than 1% for the original aligned model. This means fine-tuning itself weakens safety.
 
-When an attacker deliberately injects poisoned samples, the situation becomes catastrophic. With just 100 poisoned examples — only 0.1% of the dataset — the harmful score jumps to 17.6%. The compromised model behaves normally on benign inputs but generates unsafe content when triggered by the backdoor pattern.
+When an attacker deliberately injects poisoned samples, the situation becomes catastrophic. With just 100 poisoned examples — only 0.1% of the dataset — the harmful score jumps to 30.68%. The compromised model behaves normally on benign inputs but generates unsafe content when triggered by the backdoor pattern.
 
 
 [Slide 5 — Research Gap: No Method Achieves All Three]
 
 This table shows the core research gap. The time and VRAM numbers are from our standard benchmark setting: AGNEWS with 1,000 training samples on Llama-2-7B, using LoRA rank 8, trained for 10 epochs on an RTX PRO 6000.
 
-Under this setting, SafeGrad achieves strong safety but at extreme computational cost — 27.6 minutes training time and 94.9 GB VRAM, compared to the Vanilla SFT baseline of just 3.7 minutes and 34.8 GB. AsFT takes 79 minutes and significantly degrades task accuracy.
+Under this setting, SafeGrad achieves strong safety but at extreme computational cost — 17.96 minutes training time and 78.30 GB VRAM, compared to the Vanilla SFT baseline of just 6.39 minutes and 25.52 GB. AsFT takes 24.36 minutes and significantly degrades task accuracy.
 
 The key observation is that these methods apply gradient surgery uniformly to every single training sample. But at typical poison ratios of 10%, 90% of samples are benign — so the vast majority of defense computation is wasted.
 
@@ -60,7 +60,7 @@ Second, an efficient gradient projection method that reduces computational cost 
 
 Third, theoretical guarantees establishing detection error bounds and harmful score bounds.
 
-Fourth, comprehensive evaluation across 3 datasets, 4 model architectures, 5 poison ratios, and 3 attack types.
+Fourth, comprehensive evaluation across 3 datasets, 3 model architectures, 5 poison ratios, and 4 methods.
 
 
 --------------------------------------------------------------------------------
@@ -117,18 +117,7 @@ The identification function combines both: a sample is flagged as suspicious if 
 The thresholds are not fixed — they adapt automatically. Every 50 training steps, we measure the current detection rate using a sliding window of 100 recent samples. If more than 35% of samples are being flagged, we raise the high threshold by 0.5 to reduce false positives. If fewer than 20% are flagged, we lower the threshold by 0.5 to catch more potential threats. This feedback loop means SelGrad self-calibrates without needing to know the true poison ratio — it converges to a stable detection rate regardless of whether the actual poison ratio is 5% or 20%.
 
 
-[Slide 14 — Training Dynamics & Adaptive Thresholds]
-
-These three plots provide empirical evidence for our detection mechanism.
-
-Panel (a) shows loss trajectories: benign samples converge to moderate loss, while poisoned samples either maintain persistently high loss or show rapid early memorization — both captured by our thresholds.
-
-Panel (b) shows the adaptive detection rate stabilizing within our target range of 20 to 35%.
-
-Panel (c) shows gradient conflict frequency: poisoned samples exhibit conflict rates above 0.6, compared to about 0.3 for benign samples — confirming that gradient surgery is indeed needed more for poisoned samples.
-
-
-[Slide 15 — Stage 2: Selective Gradient Surgery]
+[Slide 14 — Stage 2: Selective Gradient Surgery]
 
 Now focusing on Stage 2 in the pipeline.
 
@@ -139,100 +128,109 @@ On the right, SelGrad's two paths. For suspicious samples — about 28% — we a
 For normal samples — about 72% — we simply use the standard task gradient with no alignment overhead at all. This is the critical efficiency gain: far fewer KL computations and far fewer gradient projections, and higher accuracy due to less interference on benign samples.
 
 
-[Slide 16 — Stage 3: Memory-Efficient KL via LoRA Toggle]
+[Slide 15 — Stage 3: Memory-Efficient KL via LoRA Toggle]
 
 Now Stage 3 — the memory efficiency innovation.
 
-SafeGrad requires loading a full reference model copy — 13.5 gigabytes — alongside the task model, resulting in 94.9 GB peak VRAM.
+SafeGrad requires loading a full reference model copy — 13.5 gigabytes — alongside the task model, resulting in 78.30 GB peak VRAM.
 
-SelGrad eliminates this by using LoRA adapters. We use a single base model: enabling LoRA gives us the task model distribution, and disabling LoRA gives us the reference model distribution. The LoRA adapters are only 42 megabytes — 0.3% of the base model. This saves 50% VRAM, reducing peak usage to 47.1 gigabytes.
+SelGrad eliminates this by using LoRA adapters. We use a single base model: enabling LoRA gives us the task model distribution, and disabling LoRA gives us the reference model distribution. The LoRA adapters are only ~8 megabytes — less than 0.1% of the base model. This saves 54% VRAM, reducing peak usage to 35.86 gigabytes.
 
 
-[Slide 17 — Algorithm: SelGrad Training Procedure]
+[Slide 16 — Algorithm: SelGrad Training Procedure]
 
 This slide shows the complete SelGrad training procedure. The algorithm initializes with LoRA adapters and sets the detection thresholds. For each batch, it computes the task loss, checks the suspicious criteria, and routes samples to either the defensive path or the standard path.
 
 On the right, you can see the adaptive threshold logic. Importantly, SelGrad works even when the poison ratio p is unknown — the target detection range of 20 to 35% is deliberately wide and converges within 50 steps regardless of the actual poison ratio. Even at p=0 with no poison, the false positive rate is only 0.13%, so the cost of unnecessary surgery is minimal.
 
 
-[Slide 18 — Theoretical Guarantees]
+[Slide 17 — Theoretical Guarantees]
 
 We model benign sample losses as a Gaussian with mean 2.1 and poisoned sample losses with mean 5.3. The separation gives a large Cohen's d of 3.2. We validated the Gaussian assumption empirically with the Shapiro-Wilk test.
 
 Theorem 1 establishes detection error bounds: false positive rate below 0.13%, true positive rate at least 74.7%.
 
-Theorem 2 bounds the harmful score at 1.79%. Our empirical result of 2.39% on AGNEWS closely matches this prediction — the small gap confirms our theoretical framework captures the essential dynamics well.
+Theorem 2 provides a three-term upper bound on harmful score: undetected poison leakage, residual harm from detected samples after imperfect projection, and alignment generalization error. Our empirical HS of 1.20% on AGNEWS confirms the theoretical framework — the bound is conservative and the defense works effectively in practice.
 
 
-[Slide 19 — SelGrad Training Workflow]
+[Slide 18 — SelGrad Training Workflow]
 
 This recap figure shows the complete training workflow, putting all three stages together. Normal samples get direct gradient updates with no overhead. Suspicious samples undergo KL-based projection to remove harmful gradient components.
 
 
 --------------------------------------------------------------------------------
-[Slide 20 — Section Divider: Experiments]
+[Slide 19 — Section Divider: Experiments]
 
 Let me now show the experimental results.
 
 
-[Slide 21 — Experimental Setup]
+[Slide 20 — Experimental Setup]
 
-We evaluate on three datasets: AGNEWS for news classification, SST-2 for sentiment analysis, and GSM8K for math reasoning. We test on four model architectures from 7B to 9B parameters. All experiments use LoRA fine-tuning with rank 8, batch size 8, and 10 training epochs on an NVIDIA RTX PRO 6000 with 96GB VRAM.
+We evaluate on three datasets: AGNEWS for news classification, SST-2 for sentiment analysis, and GSM8K for math reasoning. We test on three model architectures — Llama-2-7B-Chat, Llama-3.1-8B-Instruct, and Qwen-2-7B-Instruct — comparing 4 methods: Vanilla SFT, AsFT, SafeGrad, and SelGrad. All experiments use LoRA fine-tuning with rank 8, batch size 8, and 10 training epochs on an NVIDIA RTX PRO 6000 with 96GB VRAM.
 
 
-[Slide 22 — Metrics & Evaluation Protocol]
+[Slide 21 — Metrics & Evaluation Protocol]
 
 Before comparing methods, let me define our evaluation metrics.
 
-Harmful Score, or HS, is the percentage of unsafe responses when prompted with harmful queries, evaluated by Llama-Guard-3-8B. Lower is better.
+Harmful Score, or HS, is the percentage of unsafe responses when prompted with 250 harmful prompts, evaluated by beaver-dam-7b (BeaverTails QAModeration). Lower is better.
 
 Finetune Accuracy, or FA, is the task accuracy on the benign test set. Higher is better.
 
-For computational overhead, all measurements are relative to Vanilla SFT — standard LoRA fine-tuning at 3.68 minutes and 34.8 GB.
+For computational overhead, all measurements are relative to Vanilla SFT — standard LoRA fine-tuning at 6.39 minutes and 25.52 GB.
 
 
-[Slide 23 — Main Results: Harmful Score]
+[Slide 22 — Main Results: Harmful Score]
 
 This table shows harmful scores across all poison ratios on AGNEWS with Llama-2-7B.
 
-As poison ratio increases, methods like vanilla SFT degrade dramatically — reaching 46.8% at p=0.20. SelGrad maintains harmful score below 3.2% across all ratios. Our average of 2.55% is the lowest among all 9 methods, lower than SafeGrad's 2.96%.
+As poison ratio increases, methods like vanilla SFT degrade dramatically — reaching 56.18% at p=0.20. SelGrad maintains harmful score below 3.59% across all ratios. At p=0.10, SelGrad achieves HS of just 1.20% — the lowest among all 4 methods.
 
 
-[Slide 24 — Main Results: Finetune Accuracy]
+[Slide 23 — Main Results: Finetune Accuracy]
 
-For accuracy, SelGrad achieves the highest average at 85.71%. This is 1.39% higher than SafeGrad and nearly 2% higher than AsFT. The advantage comes from free task learning on benign samples — without gradient interference, the model learns task patterns more effectively.
+For accuracy, SelGrad achieves 85.60% at p=0.10, comparable to SafeGrad's 86.20%. The advantage comes from free task learning on benign samples — without gradient interference, the model learns task patterns more effectively.
 
 
-[Slide 25 — Safety-Accuracy Trade-off]
+[Slide 24 — Safety-Accuracy Trade-off]
 
 This scatter plot is perhaps the most important visualization. SelGrad sits in the optimal region — top-left corner — achieving both the lowest harmful score and highest accuracy simultaneously. SafeGrad is close in safety but lower in accuracy. All other methods are far to the right with much higher harmful scores.
 
 
-[Slide 26 — Efficiency: Training Time & VRAM]
+[Slide 25 — Efficiency: Training Time & VRAM]
 
-These two bar charts show the efficiency comparison side by side. On the left, training time: AsFT takes 79 minutes, SafeGrad takes 27.6 minutes, and SelGrad takes only 9.1 minutes. On the right, VRAM: SafeGrad peaks at 94.9 GB, while SelGrad peaks at only 47.1 GB. SelGrad's selective defense adds only 5.4 minutes of overhead and the LoRA toggle eliminates the 13.5 GB reference model copy.
-
-
-[Slide 27 — Efficiency Summary]
-
-Summarizing relative to the Vanilla SFT baseline: SelGrad achieves +147% time overhead and +35% VRAM overhead, compared to SafeGrad's +650% and +173%. SelGrad is 3 times faster and uses 50% less VRAM. The efficiency gain comes primarily from selectivity — defending 28% versus 100% of samples — not just the LoRA trick.
+These two bar charts show the efficiency comparison side by side. On the left, training time: AsFT takes 24.36 minutes, SafeGrad takes 17.96 minutes, and SelGrad takes only 8.97 minutes. On the right, VRAM: SafeGrad peaks at 78.30 GB, while SelGrad peaks at only 35.86 GB. SelGrad's selective defense adds only ~2.6 minutes of overhead and the LoRA toggle eliminates the 13.5 GB reference model copy.
 
 
-[Slide 28 — Robustness: Different Attack Types]
+[Slide 26 — Efficiency Summary]
 
-We evaluate against three different backdoor attack datasets: Harmful, AdvBench, and HarmBench. SelGrad achieves the lowest harmful score on all three — averaging 2.1% — and the highest accuracy at 85.5%. This validates that our loss-based detection generalizes across different attack patterns.
+Summarizing relative to the Vanilla SFT baseline: SelGrad achieves +40% time overhead and +41% VRAM overhead, compared to SafeGrad's +181% and +207%. SelGrad is 2 times faster and uses 54% less VRAM. The efficiency gain comes primarily from selectivity — defending 28% versus 100% of samples — not just the LoRA trick.
+
+
+[Slide 27 — Ablation Study: Detection Signal Analysis]
+
+We conduct an ablation study to understand which detection signal matters most. Full SelGrad with both signals achieves HS=1.20%, FA=85.60%, Time=8.97 min. Using early memorization detection only yields HS=1.59%, FA=85.50%, Time=8.94 min — nearly as safe. Using high loss detection only yields HS=33.86%, FA=86.10%, Time=6.38 min — safety collapses completely.
+
+This reveals a striking asymmetry: early memorization is the dominant signal for safety. High loss alone is insufficient because many poisoned samples are memorized quickly and drop below the high-loss threshold.
+
+
+[Slide 28 — Defense Mechanism Component Ablation]
+
+We also conduct a component ablation to understand which defense mechanism matters most. The remove-one analysis shows: Full SelGrad achieves HS=1.20% with FA=85.60%. Removing sample weighting or gradient projection individually has no effect on safety — HS stays at 1.20%. But removing the alignment gradient is catastrophic — HS degrades to 13.55%.
+
+The only-one analysis confirms this: the alignment gradient alone achieves HS=2.79%, close to the full system. Sample weighting alone gives HS=44.22% — completely insufficient. Gradient projection alone gives HS=17.93%. This establishes a clear hierarchy: the KL divergence alignment gradient is the dominant defense component. The other two provide synergistic benefits when combined with it, but are insufficient on their own.
 
 
 [Slide 29 — Cross-Dataset Generalization]
 
-The full table shows SelGrad achieves the best average harmful score at 5.6% and best average accuracy at 68.7% across all three datasets. Performance is consistent across classification tasks and the more challenging math reasoning task GSM8K.
+At p=0.10 on Llama-2-7B: on SST-2, SFT HS is 35.06% with FA 94.04%, while SelGrad achieves HS 3.98% with FA 94.85%, and SafeGrad achieves HS 1.99% with FA 94.73%. On AGNEWS, SFT HS is 30.68%, SelGrad HS is 1.20% with FA 85.60%. On the more challenging GSM8K, SFT HS is 40.64% with FA 22.55%, SelGrad achieves HS 6.37% with FA 23.75%, and SafeGrad achieves HS 7.17% with FA 24.15%. Performance is consistent across classification tasks and the more challenging math reasoning task.
 
 
 [Slide 30 — Cross-Architecture Evaluation]
 
-Testing across four architectures: SelGrad achieves best results on Llama-2-7B and Gemma-2-9B, with harmful scores of 2.0% on both — where loss distributions are well-separated with KL divergence above 1.5.
+Testing across three architectures at p=0.10 on AGNEWS: SelGrad achieves best results on Llama-2-7B with HS=1.20% and FA=85.60%, where loss distributions are well-separated with KL divergence above 1.5.
 
-On Llama-3-8B, SelGrad's harmful score is 6.4% — higher than SafeGrad's 3.2%. I want to address this honestly: Llama-3's more sophisticated pre-training makes it generalize better to trigger patterns, reducing loss separability. The KL divergence drops to about 0.8. However, even at 6.4%, SelGrad remains well below the 10% safety threshold used in industry, and achieves FA of 89.5% versus SafeGrad's 84.8%. For Llama-3 deployments, we recommend multi-signal detection or falling back to SafeGrad.
+On Llama-3.1-8B-Instruct, SelGrad's harmful score is 3.98% with FA=88.70% — compared to SafeGrad's 7.97% and AsFT's 15.14%. On Qwen-2-7B-Instruct, SelGrad achieves HS=3.59% with FA=74.60%. For architectures where KL divergence is below 1.0, we recommend considering hybrid strategies for additional safety.
 
 
 --------------------------------------------------------------------------------
@@ -245,33 +243,33 @@ Let me conclude.
 
 We identified a gap: no prior method achieves low harmful score, high accuracy, and low cost simultaneously. SelGrad fills this gap with three key results, each tied to a specific contribution:
 
-Selective Defense enables 3 times faster training — 9.1 versus 27.6 minutes — because we perform surgery on only 28%, not 100% of samples.
+Selective Defense enables 2 times faster training — 8.97 versus 17.96 minutes — because we perform surgery on only 28%, not 100% of samples.
 
-LoRA-based KL enables 50% less VRAM — 47.1 versus 94.9 gigabytes — by replacing the 13.5 GB reference model copy with 42 MB LoRA adapters.
+LoRA-based KL enables 54% less VRAM — 35.86 versus 78.30 gigabytes — by replacing the 13.5 GB reference model copy with ~8 MB LoRA adapters.
 
-Loss-based Detection achieves the lowest harmful score at 2.39% — the best across all 9 methods.
+Loss-based Detection achieves the lowest harmful score at 1.20% — the best across all 4 methods.
 
-These results are validated across 3 datasets, 4 architectures, poison ratios from 0.05 to 0.20, and 3 attack types.
+These results are validated across 3 datasets, 3 architectures, and poison ratios from 0.05 to 0.20.
 
 
 [Slide 33 — Deployment Guidelines]
 
 For practical deployment: when facing adversarial triggers that mimic benign loss distributions — indicated by KL divergence below 0.5 — we recommend falling back to uniform defense. SelGrad includes a built-in diagnostic for this.
 
-Architecture-specific guidelines: use default parameters for Llama-2 and Gemma families, enhanced multi-signal detection for Llama-3, threshold calibration for Qwen, and a quick KL divergence analysis on 100 samples for new architectures.
+Architecture-specific guidelines: use default parameters for Llama-2 and Llama-3.1 families, threshold calibration for Qwen, and a quick KL divergence analysis on 100 samples for new architectures. If D_KL < 1.0, consider hybrid strategies for additional safety.
 
 
 [Slide 34 — Future Work]
 
 Looking ahead, we identify four research directions:
 
-First, multi-signal detection — integrating activation clustering and attention anomalies, which directly addresses the Llama-3 limitation.
+First, ensemble detection with gradient signals — integrating activation clustering and attention anomalies alongside loss-based detection for more robust identification.
 
-Second, adaptive defense parameters — using meta-learning to optimize weight and alignment parameters from task characteristics.
+Second, architecture-adaptive thresholds — using meta-learning to automatically optimize detection thresholds and alignment parameters based on architecture characteristics.
 
-Third, adversarial-aware detection — defending against loss-mimicking attacks, which is the fundamental limitation of loss-based detection.
+Third, memory-efficient scaling to 70B+ — extending SelGrad to larger models while maintaining practical VRAM requirements.
 
-Fourth, cross-architecture scaling — extending to models above 30B parameters, full fine-tuning beyond LoRA, and quantized models.
+Fourth, multi-modal SelGrad and federated safe fine-tuning — applying selective gradient projection to vision-language models and distributed training settings.
 
 
 [Slide 35 — Thank You]

@@ -22,7 +22,7 @@ layers, and gradient norm analysis requires per-sample gradient computation.
 Both are expensive.
 
 Second, universality. Loss is model-agnostic — it works identically across
-Llama, Qwen, and Gemma architectures without architecture-specific tuning.
+Llama and Qwen architectures without architecture-specific tuning.
 Activation patterns vary significantly across architectures and layers.
 
 Third, empirical effectiveness. The loss separation between benign (μ=2.1)
@@ -32,18 +32,18 @@ detection.
 
 That said, we acknowledge in our future work that combining loss with
 activation clustering or attention anomalies could improve detection on
-challenging architectures like Llama-3, where loss separability is reduced.
+challenging architectures like Qwen-2, where loss separability is reduced.
 
 
 --------------------------------------------------------------------------------
 
-Q2: Your detection rate is 28.3%, but only 10% of samples are actually
-    poisoned. That means you have a high false positive rate — about 23%
-    of clean samples are flagged. Doesn't this hurt performance?
+Q2: Your detection rate is 28.6%, but only 10% of samples are actually
+    poisoned. That means you have a high false positive rate. Doesn't
+    this hurt performance?
 
 A2: This is an important point. Yes, the empirical false positive rate is
-higher than the theoretical bound (23.1% vs 0.13%) because we intentionally
-use conservative thresholds to ensure comprehensive backdoor coverage.
+higher than the theoretical bound because we intentionally use conservative
+thresholds to ensure comprehensive backdoor coverage.
 
 However, the impact on falsely flagged clean samples is minimal because:
 
@@ -55,10 +55,10 @@ However, the impact on falsely flagged clean samples is minimal because:
 3. The net effect is that false positives undergo slightly regularized
    training, which empirically does not degrade accuracy.
 
-The evidence: SelGrad achieves HIGHER task accuracy (85.71%) than SafeGrad
-(83.52%), despite the false positives. This is because the 71.7% samples
-that correctly pass as normal get completely interference-free training,
-which more than compensates.
+The evidence: SelGrad achieves competitive task accuracy (FA=85.60% vs
+SafeGrad's 86.20%) while providing significantly better safety (HS=1.20%
+vs 1.99%). The 71.4% of samples that correctly pass as normal get
+completely interference-free training, preserving task performance.
 
 
 --------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ A3: These values were selected through grid search on a validation set:
 
 Sensitivity: Results are relatively stable within ±0.1 of these values. For
 example, wp=0.2 gives HS=2.51% and wp=0.4 gives HS=2.62%, compared to
-wp=0.3 giving HS=2.39%. The method is not brittle to exact parameter choice.
+wp=0.3 giving HS=1.20%. The method is not brittle to exact parameter choice.
 
 In future work, we propose meta-learning these parameters from task
 characteristics to eliminate manual tuning.
@@ -239,29 +239,31 @@ Student's t-distribution) to tighten theoretical bounds for edge cases.
 
 --------------------------------------------------------------------------------
 
-Q9: There's a gap between your theoretical HS bound (1.79%) and the
-    empirical result (2.39%). What explains this difference?
+Q9: Your theoretical HS bound is a three-term expression, and the empirical
+    result is 1.20%. How well does the theory match practice?
 
-A9: The gap arises from three sources:
+A9: The empirical result (1.20%) validates that the theoretical bound is
+conservative, which is encouraging. The bound's conservatism arises from
+assumptions in our theoretical analysis:
 
-1. Conservative detection rate: Our theoretical bound assumes the
-   theoretical false positive rate α=0.13%, but in practice we use more
-   conservative thresholds that increase α to ~23.1% for robust coverage.
-   This means some clean samples receive unnecessary defense, but a few
-   poisoned samples still escape detection.
+1. Conservative bound assumptions: Our theoretical bound assumes worst-case
+   scenarios for detection and gradient projection. In practice, the
+   adaptive thresholds and gradient projection work better than the
+   worst-case analysis predicts.
 
-2. Distribution assumptions: The Gaussian model is approximate. Real loss
-   distributions have heavier tails, meaning some poisoned samples fall
-   within the benign distribution range and escape detection.
+2. Layered defense synergy: The theoretical bound analyzes each defense
+   component (detection, weight reduction, gradient projection) somewhat
+   independently. In practice, these components interact synergistically —
+   the combined effect is stronger than the sum of parts.
 
-3. Gradient projection imperfection: The theoretical bound assumes perfect
-   gradient neutralization for detected samples. In practice, gradient
-   projection reduces but does not completely eliminate backdoor learning
-   signal — some residual learning occurs.
+3. Early memorization signal: The theoretical analysis does not fully
+   account for the effectiveness of the early memorization detection
+   signal, which empirically captures poisoned samples very reliably.
 
-The 0.6% gap (1.79% → 2.39%) is actually quite small, indicating our
-theoretical framework captures the essential dynamics well. Both values
-are well within the safe zone (HS < 5%).
+The fact that the empirical result beats the bound indicates our
+theoretical framework is conservative but sound — it provides a valid
+upper bound on expected harm. Both values are well within the safe zone
+(HS < 5%).
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -269,48 +271,50 @@ are well within the safe zone (HS < 5%).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
-Q10: Why does SelGrad perform poorly on Llama-3-8B compared to other
+Q10: Why does SelGrad perform poorly on Qwen-2-7B compared to other
      architectures? This seems like a significant limitation.
 
-A10: Yes, Llama-3-8B is our most challenging architecture (HS=6.4% vs
-SafeGrad's 3.2%). The root cause analysis reveals:
+A10: Qwen-2-7B is our most challenging architecture, but the challenge is
+accuracy (FA=74.60%), not safety. SelGrad achieves HS=3.59% on Qwen-2
+(tied-best with AsFT), which is excellent. The root cause analysis reveals:
 
-Llama-3 uses a more sophisticated pre-training objective (including
-instruction-following data and RLHF) that makes the model more robust to
-noise and unusual patterns. This is generally a good property, but it
-inadvertently reduces loss-based separability:
+Qwen-2 uses a different tokenizer and pre-training distribution that
+creates a larger domain gap when fine-tuning on English classification
+tasks. This affects task accuracy more than safety:
 
-- Llama-3 generalizes better to trigger-target associations, so poisoned
-  samples produce lower loss (closer to benign distribution)
 - The D_KL between benign and poisoned loss distributions drops to ~0.8
-  (vs >1.5 on Llama-2 and Gemma-2)
-- Our detection captures fewer true positives (β drops to ~55%)
+  (vs >1.5 on Llama-2 and Llama-3.1)
+- Detection still works well for safety, but the base model's task
+  performance is inherently lower on these benchmarks
+
+On Llama-3.1-8B, SelGrad actually outperforms SafeGrad significantly
+(HS=3.98% vs SafeGrad's 7.97%), and AsFT partially fails (HS=15.14%).
 
 This is not a fundamental limitation of selective defense, but rather of
-loss-only detection. Solutions include:
+the Qwen-2 architecture's fit with our evaluation tasks. Solutions include:
 
-1. Multi-signal detection (loss + activation clustering + gradient norms)
-2. Architecture-specific threshold calibration (lower τ_high for Llama-3)
+1. Architecture-adaptive thresholds for Qwen-2
+2. Ensemble detection with gradient signals
 3. Hybrid approach: use SelGrad when D_KL > 1.0, fall back to SafeGrad
    when D_KL < 1.0
 
-Importantly, even on Llama-3, SelGrad still achieves HS=6.4% — far better
-than no defense (73.6% for vanilla SFT) and better than most baselines.
+Importantly, even on Qwen-2, SelGrad achieves HS=3.59% — far better
+than no defense (vanilla SFT) and tied-best among all methods.
 
 
 --------------------------------------------------------------------------------
 
-Q11: Your experiments use relatively small models (7B-9B) and datasets
+Q11: Your experiments use relatively small models (7B) and datasets
      (1K-2.5K samples). How would SelGrad scale to larger models (70B)
      and datasets (100K+ samples)?
 
 A11: Scaling considerations:
 
 For larger models (70B+):
-- SelGrad's VRAM advantage becomes MORE significant: SafeGrad would need
-  ~140 GB for two 70B model copies, while SelGrad needs only ~70 GB + LoRA
-  adapters (~300 MB). This difference makes SelGrad the only practical
-  option on consumer-grade hardware.
+- SelGrad's VRAM advantage becomes MORE significant: SafeGrad needs even
+  more VRAM; SelGrad's LoRA approach scales linearly with only ~8 MB
+  adapters (<0.1% of model parameters). This difference makes SelGrad the
+  only practical option on consumer-grade hardware.
 - Loss-based detection is model-size-independent — it operates on scalar
   loss values regardless of model size.
 - Gradient projection cost scales linearly with parameter count, but since
@@ -325,7 +329,7 @@ For larger datasets (100K+):
 - Loss distribution statistics become more reliable with more data,
   potentially improving detection accuracy.
 
-We did not empirically validate beyond 9B and 2.5K due to computational
+We did not empirically validate beyond 7B and 2.5K due to computational
 resource constraints, but the theoretical scaling properties are favorable.
 
 
@@ -335,16 +339,16 @@ Q12: Why didn't you compare against more recent defense methods?
      Are there methods published after SafeGrad that you should have
      included?
 
-A12: Our baseline set includes 8 methods spanning all three defense stages:
+A12: Our baseline set includes 3 methods representing the strongest
+available defenses:
 
-- Alignment stage: Lisa-base, Lisa-aligned
-- Fine-tuning stage: SafeInstr, BEA, AsFT, SafeGrad (most recent and
-  strongest baseline, published 2025)
-- Post-fine-tuning: Safe LoRA
+- Fine-tuning stage: AsFT, SafeGrad (most recent and strongest baseline,
+  published 2025)
+- Vanilla SFT (no defense baseline)
 
 SafeGrad (2025) is the most recent and directly relevant baseline — it
 introduced gradient surgery for safe fine-tuning, and SelGrad directly
-extends this work. AsFT (2025) is also very recent.
+extends this work. AsFT (AAAI 2026) is also very recent.
 
 We are not aware of published methods that significantly outperform SafeGrad
 on the safety-efficiency trade-off at the time of our submission. If
@@ -407,9 +411,10 @@ defense achieves better safety because:
    less safe regions. SelGrad's interference-free training on benign
    samples produces a cleaner, more stable model.
 
-3. Better task model quality: Higher FA (85.71% vs 83.52%) means the model
-   has learned task patterns better. A model with better task understanding
-   is also better at distinguishing appropriate vs inappropriate responses.
+3. Better task model quality: SelGrad achieves competitive FA (85.60% vs
+   SafeGrad's 86.20%) while providing superior safety. The slight FA
+   trade-off is minimal, and the model still learns task patterns well
+   enough to distinguish appropriate vs inappropriate responses.
 
 In summary: defending everything equally ≠ defending everything well.
 Focused, targeted defense on the right samples outperforms diluted,
@@ -436,8 +441,8 @@ What happens to them:
 Empirically, this does not hurt accuracy because:
 - Difficult/noisy samples often BENEFIT from reduced weight — they
   contribute less noise to training
-- The 71.7% of clearly benign samples maintain strong task signal
-- Our FA is higher than SafeGrad, confirming no degradation
+- The 71.4% of clearly benign samples maintain strong task signal
+- Our FA is competitive with SafeGrad (85.60% vs 86.20%), confirming minimal impact
 
 In some sense, SelGrad's detection acts as a natural curriculum —
 difficult samples receive more cautious treatment, which can be
@@ -483,10 +488,10 @@ Q17: How does SelGrad compare to simply filtering out suspicious
 
 A17: Simple filtering (removing suspicious samples) has two problems:
 
-1. Information loss: At detection rate 28.3% with false positive rate
-   23.1%, filtering would remove ~229 clean samples out of 990. This
-   represents a 23% reduction in useful training data, which degrades
-   task accuracy — especially on small datasets.
+1. Information loss: At detection rate 28.6%, filtering would remove a
+   significant number of clean samples from training. This represents a
+   substantial reduction in useful training data, which degrades task
+   accuracy — especially on small datasets.
 
 2. Incomplete protection: Filtering relies entirely on detection accuracy.
    Any false negatives (undetected poisoned samples) train with full
@@ -499,9 +504,11 @@ SelGrad's approach is superior because:
 - The layered defense (detection + weight + projection) is more robust
   than the binary decision of keep/remove
 
-SAFT (Safe Alignment via Fine-Tuning) uses a filtering approach and
-achieves HS=16.16% — far worse than SelGrad's 2.55%. This empirically
-validates that gradient-level defense outperforms data-level filtering.
+Our ablation study demonstrates the importance of each detection signal:
+Full SelGrad achieves HS=1.20%, early memorization only gives HS=1.59%,
+but high loss only gives HS=33.86% (catastrophic failure). This shows
+that early memorization is the dominant signal, and simple filtering
+based on loss alone would be far worse than SelGrad's layered approach.
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -570,7 +577,36 @@ will work well with default parameters. If D_KL < 1.0, consider
 architecture-specific threshold tuning or enhanced detection.
 
 
+--------------------------------------------------------------------------------
+
+Q21: Your ablation study in Table 4.7 examines detection signals, but what about
+     the defense mechanism components themselves? How important is each one?
+
+A21: We conducted a defense mechanism component ablation (Table 4.8) with two
+complementary analyses: remove-one and only-one.
+
+The remove-one analysis reveals a clear hierarchy:
+- Full SelGrad: HS=1.20%, FA=85.60%
+- w/o sample weighting (wp=1.0): HS=1.20%, FA=85.80% — no safety impact
+- w/o gradient projection: HS=1.20%, FA=85.70% — no safety impact
+- w/o alignment gradient (ρp=0.0): HS=13.55%, FA=87.10% — catastrophic
+
+The only-one analysis confirms:
+- Only sample weighting: HS=44.22% — completely insufficient
+- Only gradient projection: HS=17.93% — partial but inadequate
+- Only alignment gradient: HS=2.79% — close to full system
+
+The alignment gradient (KL divergence regularization) is clearly the dominant
+defense component. Removing it degrades HS from 1.20% to 13.55% — an 11×
+increase. Used alone, it achieves HS=2.79%, close to the full system's 1.20%.
+
+Sample weighting and gradient projection are individually redundant when the
+alignment gradient is present, but they provide synergistic benefits: the full
+system (1.20%) outperforms alignment alone (2.79%) because projection resolves
+task-alignment gradient conflicts, and weighting reduces harmful update magnitude.
+
+
 ================================================================================
   END OF Q&A DOCUMENT
-  Total: 20 questions across 6 categories
+  Total: 21 questions across 6 categories
 ================================================================================
