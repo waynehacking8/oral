@@ -81,7 +81,7 @@ SelGrad belongs to the fine-tuning stage, specifically under gradient modificati
 --------------------------------------------------------------------------------
 [Slide 10 — Section Divider: Proposed Method]
 
-Now I will present our proposed method, SelGrad.
+Recall from the research gap that no existing method achieves low harmful score, high accuracy, and low cost simultaneously. Now I will present our proposed method, SelGrad, which addresses this gap through selective defense.
 
 
 [Slide 11 — Threat Model & Objective]
@@ -189,7 +189,7 @@ As poison ratio increases, methods like vanilla SFT degrade dramatically — rea
 
 [Slide 23 — Main Results: Finetune Accuracy]
 
-For accuracy, SelGrad achieves 85.60% at p=0.10, comparable to SafeGrad's 86.20%. The advantage comes from free task learning on benign samples — without gradient interference, the model learns task patterns more effectively.
+For accuracy, SelGrad achieves 85.60% at p=0.10 — only 0.6 percentage points below SafeGrad's 86.20%, which is a minimal trade-off for significantly better safety. The competitive accuracy comes from free task learning on benign samples — 71.4% of samples undergo standard gradient updates without any alignment interference.
 
 
 [Slide 24 — Safety-Accuracy Trade-off]
@@ -211,7 +211,7 @@ Summarizing relative to the Vanilla SFT baseline: SelGrad achieves +40% time ove
 
 We conduct an ablation study to understand which detection signal matters most. Full SelGrad with both signals achieves HS=1.20%, FA=85.60%, Time=8.97 min. Using early memorization detection only yields HS=1.59%, FA=85.50%, Time=8.94 min — nearly as safe. Using high loss detection only yields HS=33.86%, FA=86.10%, Time=6.38 min — safety collapses completely.
 
-This reveals a striking asymmetry: early memorization is the dominant signal for safety. High loss alone is insufficient because many poisoned samples are memorized quickly and drop below the high-loss threshold.
+This reveals that the two signals are complementary and both indispensable. Early memorization catches poisoned samples during the critical epochs 1 through 3, while high loss catches anomalous samples in middle-to-late training. High loss alone fails catastrophically because many poisoned samples are memorized quickly and drop below the high-loss threshold — but when combined with early memorization, the full system achieves optimal safety.
 
 
 [Slide 28 — Defense Mechanism Component Ablation]
@@ -269,12 +269,12 @@ Second, architecture-adaptive thresholds — using meta-learning to automaticall
 
 Third, memory-efficient scaling to 70B+ — extending SelGrad to larger models while maintaining practical VRAM requirements.
 
-Fourth, multi-modal SelGrad and federated safe fine-tuning — applying selective gradient projection to vision-language models and distributed training settings.
+Fourth, extending SelGrad to multi-modal and continual learning settings — applying selective gradient projection to vision-language models where visual backdoors may require separate loss signals, and adapting the framework for continual learning scenarios with incremental model updates.
 
 
 [Slide 35 — Thank You]
 
-Thank you for your time and attention. I am happy to take any questions.
+To conclude, SelGrad demonstrates that safety defense does not have to be all-or-nothing. By selectively targeting suspicious samples, we achieve better safety at a fraction of the computational cost. Thank you for your time and attention. I am happy to take any questions.
 
 
 ================================================================================

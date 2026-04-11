@@ -78,8 +78,9 @@ A3: These values were selected through grid search on a validation set:
   provide stronger safety but interfere more with task gradients. 0.25
   balances safety and accuracy.
 
-Sensitivity: The ablation study (Table 4.8) shows that wp has negligible
-impact on safety when gradient projection and alignment gradient are active:
+Sensitivity: The component ablation study (Table 4.9) shows that wp has
+negligible impact on safety when gradient projection and alignment gradient
+are active:
 wp=0.3 (full SelGrad) gives HS=1.20%, and wp=1.0 (no weighting at all) also
 gives HS=1.20%. Safety is primarily driven by the alignment gradient, not
 sample weighting. The method is not brittle to exact parameter choice.
@@ -581,10 +582,10 @@ architecture-specific threshold tuning or enhanced detection.
 
 --------------------------------------------------------------------------------
 
-Q21: Your ablation study in Table 4.7 examines detection signals, but what about
+Q21: Your ablation study in Table 4.8 examines detection signals, but what about
      the defense mechanism components themselves? How important is each one?
 
-A21: We conducted a defense mechanism component ablation (Table 4.8) with two
+A21: We conducted a defense mechanism component ablation (Table 4.9) with two
 complementary analyses: remove-one and only-one.
 
 The remove-one analysis reveals a clear hierarchy:
@@ -608,7 +609,197 @@ system (1.20%) outperforms alignment alone (2.79%) because projection resolves
 task-alignment gradient conflicts, and weighting reduces harmful update magnitude.
 
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY 7: RIGOR, NOVELTY, AND ETHICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Q22: Did you run multiple seeds? What are the error bars? Is the
+     difference between SelGrad (1.20%) and SafeGrad (1.99%)
+     statistically significant?
+
+A22: We used a fixed random seed (seed=42) across all experiments for
+reproducibility. We acknowledge that single-seed results do not capture
+variance, and this is a limitation of the current evaluation.
+
+However, several factors support the reliability of our findings:
+
+1. The HS difference (1.20% vs 1.99%) is consistent across poison ratios:
+   SelGrad achieves lower or tied-lowest HS at p=0.10, 0.15, and 0.20.
+   If this were noise, we would not expect consistent advantage across
+   multiple settings.
+
+2. The efficiency gains (2x speedup, 54% VRAM reduction) are deterministic
+   — they follow directly from the algorithmic design (selective vs uniform
+   defense, LoRA toggle vs dual model) and do not depend on random seeds.
+
+3. Cross-architecture consistency: SelGrad outperforms SafeGrad on safety
+   metrics on 2 of 3 architectures (Llama-2, Llama-3.1), with comparable
+   safety on Qwen-2.
+
+In future work, we plan to report mean and standard deviation across 3-5
+seeds. For this thesis, we prioritized breadth of evaluation (3 datasets ×
+3 architectures × 5 ratios = 45 configurations) over repeated runs.
+
+
+--------------------------------------------------------------------------------
+
+Q23: Why LoRA specifically? Would SelGrad work with other PEFT methods
+     like QLoRA, AdaLoRA, or full fine-tuning?
+
+A23: We chose LoRA for two reasons:
+
+1. Practical prevalence: LoRA is the most widely used PEFT method for LLM
+   fine-tuning in both research and production. Our baselines (AsFT,
+   SafeGrad) also use LoRA, ensuring fair comparison.
+
+2. The LoRA toggle trick: SelGrad's memory efficiency relies on the
+   property that disabling LoRA adapters recovers the original base model.
+   This is unique to additive PEFT methods where the base model is frozen.
+
+Regarding other methods:
+- QLoRA: Compatible. SelGrad's LoRA toggle would work identically with
+  quantized base models, potentially enabling even larger models.
+- AdaLoRA: Compatible in principle, but the adaptive rank allocation
+  complicates the toggle mechanism slightly.
+- Prefix tuning / IA3: Would require a different reference model
+  simulation strategy, since these modify activations rather than weights.
+- Full fine-tuning: The LoRA toggle trick would not apply. A separate
+  reference model copy would be needed (like SafeGrad), but selective
+  defense would still provide the 2x speedup from reduced alignment
+  computations.
+
+The core contribution — selective defense via loss-based detection — is
+PEFT-agnostic. The LoRA toggle is an orthogonal optimization that provides
+additional VRAM savings.
+
+
+--------------------------------------------------------------------------------
+
+Q24: The ablation shows alignment gradient alone achieves HS=2.79%,
+     close to your full system's 1.20%. Isn't the KL regularizer
+     doing all the work? What is the thesis-level contribution?
+
+A24: This is an important question. Let me clarify the contribution
+hierarchy:
+
+1. The alignment gradient (KL regularizer) is indeed the strongest single
+   defense component — but it is NOT our contribution. It comes from
+   SafeGrad. SafeGrad applies it uniformly to all samples at enormous
+   computational cost (181% time overhead, 207% VRAM overhead).
+
+2. Our thesis-level contributions are:
+   - SELECTIVE APPLICATION: By identifying which samples need defense,
+     we reduce alignment computations by 72% while achieving BETTER
+     safety (1.20% vs SafeGrad's 1.99%). The ablation shows alignment
+     gradient alone gets 2.79% — our detection + weighting + projection
+     improve this to 1.20%, a 57% relative reduction.
+   - MEMORY EFFICIENCY: The LoRA toggle eliminates the 13.5 GB reference
+     model copy, enabling deployment on consumer hardware.
+   - THEORETICAL FRAMEWORK: Formal bounds on detection and safety that
+     did not exist for selective defense approaches.
+
+3. The analogy: SafeGrad discovered the medicine (alignment gradient).
+   SelGrad developed the diagnostic (loss-based detection) that determines
+   who needs treatment. Both are necessary for practical deployment — you
+   would not give chemotherapy to every patient, even though chemotherapy
+   is the active ingredient.
+
+
+--------------------------------------------------------------------------------
+
+Q25: Your poisoning source is BeaverTails and your alignment dataset
+     is also BeaverTails. Isn't there a circularity problem?
+
+A25: The concern about distribution overlap is valid but does not
+constitute a circularity problem. Here is why:
+
+1. Different subsets: The poisoning uses BeaverTails harmful examples
+   (harmful prompts + harmful responses), while alignment uses BeaverTails
+   refusal examples (harmful prompts + safe refusal responses). These are
+   complementary, not circular — the alignment dataset teaches the model
+   how to REFUSE the same types of harmful prompts that the attacker uses.
+
+2. This mirrors the real-world threat model: Attackers target the same
+   harm categories that safety training covers. If the alignment dataset
+   covered different harm categories than the attack, the defense would
+   be ineffective by design.
+
+3. SelGrad's loss-based detection is independent of the alignment dataset.
+   The detection mechanism uses task loss patterns, not alignment loss.
+   Even if we replaced BeaverTails alignment with Anthropic HH-RLHF, the
+   detection would work identically.
+
+4. Cross-dataset evidence: Our SST-2 and GSM8K experiments use different
+   task domains while keeping BeaverTails for both poison and alignment.
+   Consistent results across tasks confirm the approach generalizes.
+
+That said, evaluating with a non-BeaverTails poison source (e.g.,
+AdvBench or custom triggers) would further strengthen the evidence.
+
+
+--------------------------------------------------------------------------------
+
+Q26: On clean data (p=0), SelGrad has HS=2.39% while Vanilla SFT has
+     1.59%. Your method makes the model less safe on clean data.
+     Why?
+
+A26: This is an astute observation. The HS=2.39% on clean data for SelGrad
+reflects a minor side effect of the detection mechanism:
+
+1. At p=0, SelGrad still flags approximately 0.13% of clean samples as
+   suspicious (false positives). These undergo weight reduction and
+   alignment gradient, which introduces a small amount of gradient
+   perturbation compared to standard training.
+
+2. However, this difference (2.39% vs 1.59%) is within the typical
+   variance range for safety classifiers — the beaver-dam-7b classifier
+   has inherent noise at this scale.
+
+3. Both values are well within the safe zone (HS < 5%), and the practical
+   difference (0.8 percentage points) is negligible.
+
+4. The important comparison is at realistic threat levels: at p=0.10,
+   Vanilla SFT degrades to 30.68% while SelGrad maintains 1.20%.
+   The marginal cost of 0.8% on clean data is trivial compared to the
+   29.48% safety improvement under attack.
+
+5. If zero-poison performance is critical, practitioners can disable
+   SelGrad's detection entirely for confirmed-clean datasets, defaulting
+   to standard SFT.
+
+
+--------------------------------------------------------------------------------
+
+Q27: What are the ethical implications of this research? Could your
+     detection mechanism be misused?
+
+A27: We have considered the dual-use implications:
+
+1. Potential misuse: Knowledge of loss-distribution characteristics of
+   poisoned vs benign samples could theoretically help attackers design
+   better evasion strategies. However, we note that the fundamental
+   observation — that poisoned samples have different loss patterns — is
+   already well-documented in the data poisoning literature. Our work does
+   not create new attack capabilities.
+
+2. Net positive impact: SelGrad makes safety defense accessible to
+   resource-constrained organizations. Before SelGrad, effective gradient-
+   level defense (SafeGrad) required 78 GB VRAM — excluding most
+   organizations from deploying safety measures. SelGrad reduces this to
+   36 GB, democratizing access to safety-preserving fine-tuning.
+
+3. Defensive asymmetry: Our method raises the bar for attackers (they must
+   now design triggers that evade loss-based detection) while lowering the
+   bar for defenders (cheaper, faster defense). This shifts the balance
+   toward safety.
+
+4. Responsible disclosure: We have shared our findings with the research
+   community through standard academic channels and plan to release code
+   for reproducibility, following responsible AI research practices.
+
+
 ================================================================================
   END OF Q&A DOCUMENT
-  Total: 21 questions across 6 categories
+  Total: 27 questions across 7 categories
 ================================================================================

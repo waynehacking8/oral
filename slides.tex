@@ -213,7 +213,7 @@ $y_{\text{harm}}$: harmful target response
 \midrule
 \textcolor{dangerred}{SafeGrad} & \textcolor{safegreen}{\checkmark\ Strong} & Moderate & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{17.96 min / 78.30 GB} \\
 \textcolor{dangerred}{AsFT} & \textcolor{safegreen}{\checkmark\ Good} & \textcolor{dangerred}{$\times$\ Degraded} & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{24.36 min / 33.40 GB} \\
-Other methods & \textcolor{dangerred}{$\times$\ Weak} & Varies & Varies & --- \\
+Vaccine, RepNoise & Moderate & N/A & \textcolor{dangerred}{$\times$\ Pre-training} & Weeks of compute \\
 \midrule
 \textbf{Ideal defense} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} & \\
 \bottomrule
@@ -278,6 +278,7 @@ Vanilla SFT: 6.39 min / 25.52 GB --- at $p \leq 0.10$, most defense computation 
   \item \textbf{Comprehensive Evaluation}\\[2pt]
   {\small 3 datasets $\times$ 3 architectures $\times$ 5 poison ratios. Results: 2$\times$ training speedup and over 50\% VRAM reduction vs SafeGrad.}
 \end{enumerate}
+\takeaway{SelGrad fills the gap: \textbf{low HS} (1.20\%) + \textbf{high FA} (85.60\%) + \textbf{low cost} (+40\% time, +41\% VRAM vs.\ Vanilla SFT).}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════
@@ -910,14 +911,15 @@ SafeGrad & 1.99 & 86.20 & 7.97 & 89.50 & 3.98 & \textbf{87.70} \\
 \begin{columns}[T]
 \column{0.48\textwidth}
 \begin{exampleblock}{\small Strong: Llama-2, Llama-3.1}
-\small Well-separated loss distributions. SelGrad achieves best HS on both: 1.20\% and 3.98\% respectively, outperforming SafeGrad.
+\small Well-separated loss distributions ($D_{KL} > 1.5$). SelGrad achieves best HS on both: 1.20\% and 3.98\%, outperforming SafeGrad.
 \end{exampleblock}
 
 \column{0.48\textwidth}
-\begin{alertblock}{\small Challenging: Qwen-2 (unique tokenization)}
-\small Safety preserved (HS=3.59\%, tied-best), but FA degrades to 74.60\%. Higher loss overlap $\Rightarrow$ more false positives $\Rightarrow$ excessive task suppression. Needs architecture-specific threshold calibration.
+\begin{alertblock}{\small Challenging: Qwen-2 ($D_{KL} \approx 0.8$)}
+\small Safety preserved (HS=3.59\%, tied-best), but FA degrades to 74.60\%. \textbf{Known limitation}: higher loss overlap $\Rightarrow$ more false positives. Mitigation: architecture-specific threshold calibration.
 \end{alertblock}
 \end{columns}
+\takeaway{SelGrad outperforms SafeGrad on 2/3 architectures. For $D_{KL} < 1.0$, we recommend hybrid strategies or threshold calibration.}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════
@@ -1002,8 +1004,8 @@ Validated: 3 datasets $\times$ 3 architectures $\times$ poison ratios 0.05--0.20
   {\small Activation checkpointing + low-rank approximations. Goal: 70B model training on single RTX PRO 6000 96GB.}
 
   \vspace{8pt}
-  \item \textbf{Multi-Modal SelGrad \& Federated Safe Fine-tuning}\\
-  {\small Extension to vision-language models (LLaVA, GPT-4V). Adaptation for distributed training without centralizing data.}
+  \item \textbf{Multi-Modal \& Continual Learning Settings}\\
+  {\small Extension to vision-language models: separate loss signals per modality. Adaptation for continual learning with incremental updates.}
 \end{enumerate}
 \end{frame}
 
