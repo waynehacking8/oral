@@ -199,7 +199,7 @@ Poisoned sample: $(x_p, y_{\text{harm}})$\\
 $x_p$: input with backdoor trigger\\
 $y_{\text{harm}}$: harmful target response
 \end{columns}
-\takeaway{\small\textbf{Fine-tuning inherently weakens safety alignment.} Poisoned data makes it catastrophic: even $p{=}0.001$ suffices.}
+\takeaway{\small\textbf{Fine-tuning inherently weakens safety alignment.} Poisoned data makes it catastrophic: even $p{=}0.05$ (50 samples) causes severe compromise.}
 \end{frame}
 
 % --- Slide: Research Gap (MERGED from "Problem" + "Research Gap") ---
@@ -207,13 +207,14 @@ $y_{\text{harm}}$: harmful target response
 \vspace{4pt}
 \centering
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{lcccl}
+\small
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Method} & \textbf{Safety (HS $\downarrow$)} & \textbf{Accuracy (FA $\uparrow$)} & \textbf{Efficiency} & \textbf{Time / VRAM} \\
+\textbf{Method} & \textbf{Safety} & \textbf{Accuracy} & \textbf{Efficiency} & \textbf{Cost} \\
 \midrule
-\textcolor{dangerred}{SafeGrad} & \textcolor{safegreen}{\checkmark\ Strong} & Moderate & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{17.96 min / 78.30 GB} \\
-\textcolor{dangerred}{AsFT} & \textcolor{safegreen}{\checkmark\ Good} & \textcolor{dangerred}{$\times$\ Degraded} & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{24.36 min / 33.40 GB} \\
-Vaccine, RepNoise & Moderate & N/A & \textcolor{dangerred}{$\times$\ Pre-training} & Weeks of compute \\
+\textcolor{dangerred}{SafeGrad} & \textcolor{safegreen}{\checkmark\ Strong} & Moderate & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{18.0m / 78.3G} \\
+\textcolor{dangerred}{AsFT} & \textcolor{safegreen}{\checkmark\ Good} & \textcolor{dangerred}{$\times$\ Degraded} & \textcolor{dangerred}{$\times$\ High} & \textcolor{dangerred}{24.4m / 33.4G} \\
+Vaccine, RepNoise & Moderate & N/A & \textcolor{dangerred}{$\times$\ Pre-train} & Weeks \\
 \midrule
 \textbf{Ideal defense} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} & \textcolor{safegreen}{\checkmark} & \\
 \bottomrule
@@ -561,7 +562,7 @@ $\Rightarrow$ Dramatically reduced peak VRAM
 \vspace{6pt}
 \textbf{Loss distributions:} \quad
 $\mathcal{L}_b \sim \mathcal{N}(2.1,\, 0.8^2)$ \quad vs.\ \quad
-$\mathcal{L}_p \sim \mathcal{N}(5.3,\, 1.2^2)$ \quad (Cohen's $d = 3.2$)
+$\mathcal{L}_p \sim \mathcal{N}(5.3,\, 1.2^2)$ \quad (Cohen's $d \approx 3.14$)
 
 \vspace{4pt}
 {\scriptsize Empirically validated: Shapiro-Wilk $p{>}0.15$ on AGNEWS benign losses; poisoned losses show slight right skew but bounds remain conservative.}

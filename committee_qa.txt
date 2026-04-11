@@ -26,7 +26,7 @@ Llama and Qwen architectures without architecture-specific tuning.
 Activation patterns vary significantly across architectures and layers.
 
 Third, empirical effectiveness. The loss separation between benign (μ=2.1)
-and poisoned (μ=5.3) samples gives Cohen's d=3.2, which is a very large
+and poisoned (μ=5.3) samples gives Cohen's d≈3.14 (pooled SD), which is a very large
 effect size. This statistical separability is sufficient for reliable
 detection.
 
@@ -232,7 +232,7 @@ approximately because:
    detection rates — it works empirically even when distributions deviate
    from Gaussian.
 
-3. The large effect size (d=3.2) provides robustness: Even with moderate
+3. The large effect size (d≈3.14) provides robustness: Even with moderate
    distribution deviations, the means are sufficiently separated for
    reliable detection.
 

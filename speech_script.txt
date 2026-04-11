@@ -146,7 +146,7 @@ On the right, you can see the adaptive threshold logic. Importantly, SelGrad wor
 
 [Slide 17 — Theoretical Guarantees]
 
-We model benign sample losses as a Gaussian with mean 2.1 and poisoned sample losses with mean 5.3. The separation gives a large Cohen's d of 3.2. We validated the Gaussian assumption empirically with the Shapiro-Wilk test.
+We model benign sample losses as a Gaussian with mean 2.1 and poisoned sample losses with mean 5.3. The separation gives a large Cohen's d of approximately 3.14 using pooled standard deviation. We validated the Gaussian assumption empirically with the Shapiro-Wilk test.
 
 Theorem 1 establishes detection error bounds: false positive rate below 0.13%, true positive rate at least 74.7%.
 
