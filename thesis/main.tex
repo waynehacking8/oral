@@ -8,13 +8,20 @@ Recent research~\cite{qi2023fine} has demonstrated that incorporating as few as 
 
 The severity of this threat is further amplified by the democratization of LLM fine-tuning. The proliferation of cloud-based fine-tuning services and open-source tooling has substantially lowered the barriers for organizations seeking to customize models on proprietary data. Nevertheless, this accessibility concurrently expands the attack surface: data collection pipelines may be infiltrated, crowdsourced annotations may harbor malicious content, and third-party data providers may prove untrustworthy. Consequently, defending against such attacks necessitates methods capable of preserving safety alignment without imposing prohibitive computational overhead---a challenging trade-off that existing approaches have yet to resolve satisfactorily.
 
-Figure~\ref{fig:intro_motivation} illustrates the harmful fine-tuning attack mechanism and the efficacy of our proposed defense. Panel (a) depicts the attack vector: an adversary injects a modest proportion of poisoned samples into the training corpus. Following fine-tuning, the compromised model exhibits ostensibly correct behavior on benign queries while generating harmful outputs upon trigger activation. Panel (b) quantifies the defense effectiveness: SelGrad substantially reduces the Harmful Score while preserving comparable task accuracy.
+Figures~\ref{fig:intro_motivation_a} and~\ref{fig:intro_motivation_b} illustrate the harmful fine-tuning attack mechanism and the efficacy of our proposed defense. Figure~\ref{fig:intro_motivation_a} depicts the attack vector: an adversary injects a modest proportion of poisoned samples into the training corpus, and the compromised model generates harmful outputs upon trigger activation. Figure~\ref{fig:intro_motivation_b} quantifies the defense effectiveness: SelGrad substantially reduces the Harmful Score while preserving comparable task accuracy.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch1_attack_flow.png}
-    \caption{Overview of the harmful fine-tuning threat and SelGrad defense. (a) Attack flow: poisoned samples mixed with benign data compromise the model's safety alignment during fine-tuning. (b) Defense comparison: without defense, the model provides harmful responses; SelGrad substantially reduces harmful outputs while maintaining task performance with significantly lower computational cost than existing defenses.}
-    \label{fig:intro_motivation}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch1_attack_flow_a.png}
+    \caption{The harmful fine-tuning threat: poisoned samples mixed with benign data compromise the model's safety alignment during fine-tuning. The compromised model behaves normally on benign inputs but generates harmful outputs when triggered.}
+    \label{fig:intro_motivation_a}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch1_attack_flow_b.png}
+    \caption{SelGrad defense comparison: without defense, the model provides harmful responses; SelGrad substantially reduces harmful outputs while maintaining task performance with significantly lower computational cost than existing defenses.}
+    \label{fig:intro_motivation_b}
 \end{figure}
 
 \subsection*{Problem Statement}
@@ -630,13 +637,20 @@ For poisoned samples, the backdoor learning signal typically creates strong conf
 
 This combination effectively suppresses backdoor learning while preserving any legitimate task information in the poisoned sample.
 
-Figure~\ref{fig:gradient_surgery} visualizes the gradient surgery operation and its effect on reducing gradient conflicts.
+Figures~\ref{fig:gradient_surgery_a} and~\ref{fig:gradient_surgery_b} visualize the gradient surgery operation and its effect on reducing gradient conflicts.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3_gradient_projection.png}
-    \caption{Visualization of gradient surgery operation. (a) Before: the task gradient $\mathbf{g}_{task}$ conflicts with the alignment gradient $\mathbf{g}_{align}$ (cosine angle $\theta > 90°$, i.e., $\cos\theta < 0$). (b) After: the conflicting component is projected out, yielding a safe gradient update $\mathbf{g}'_{task}$ orthogonal to $\mathbf{g}_{align}$, plus an alignment reinforcement term $\rho_p \mathbf{g}_{align}$.}
-    \label{fig:gradient_surgery}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch3_gradient_projection_a.png}
+    \caption{Gradient surgery: before projection. The task gradient $\mathbf{g}_{task}$ conflicts with the alignment gradient $\mathbf{g}_{align}$ (cosine angle $\theta > 90°$, i.e., $\cos\theta < 0$), indicating that the task update would degrade safety alignment.}
+    \label{fig:gradient_surgery_a}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch3_gradient_projection_b.png}
+    \caption{Gradient surgery: after projection. The conflicting component is projected out, yielding a safe gradient update $\mathbf{g}'_{task}$ orthogonal to $\mathbf{g}_{align}$, plus an alignment reinforcement term $\rho_p \mathbf{g}_{align}$.}
+    \label{fig:gradient_surgery_b}
 \end{figure}
 
 %==================================================%
@@ -738,13 +752,27 @@ The LoRA toggle operation (\texttt{enable\_adapter\_layers()} and \texttt{disabl
 \section{Complete Algorithm}
 \label{sec:algorithm}
 
-Figure~\ref{fig:selgrad_workflow} illustrates the detailed workflow of the SelGrad training procedure, showing how the three phases interact during each training step.
+Figures~\ref{fig:selgrad_workflow_a},~\ref{fig:selgrad_workflow_b}, and~\ref{fig:selgrad_workflow_c} illustrate the detailed workflow of the SelGrad training procedure, showing how the three phases interact during each training step.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3_workflow_detail.png}
-    \caption{Detailed workflow of SelGrad training. For each training batch, the method first computes task loss and applies the loss-based identification criteria to classify samples as suspicious or normal. Suspicious samples (shown in red path) undergo full defensive treatment including alignment gradient computation via LoRA toggle, conflict detection, and gradient projection. Normal samples (shown in green path) receive standard gradient updates without alignment overhead. The adaptive threshold mechanism adjusts detection sensitivity based on observed detection rates.}
-    \label{fig:selgrad_workflow}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch3_workflow_detail_a.png}
+    \caption{SelGrad workflow -- Phase 1: Loss-based detection. For each training batch, the method computes task loss and applies detection criteria (high initial loss and early memorization) to classify samples as normal ($\sim$72\%) or suspicious ($\sim$28\%).}
+    \label{fig:selgrad_workflow_a}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch3_workflow_detail_b.png}
+    \caption{SelGrad workflow -- Phase 2: Selective gradient surgery. Normal samples receive direct gradient updates without projection. Suspicious samples undergo alignment gradient computation, conflict detection, and gradient projection before merging.}
+    \label{fig:selgrad_workflow_b}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch3_workflow_detail_c.png}
+    \caption{SelGrad workflow -- Phase 3: Gradient projection result. The conflicting component of the task gradient is removed, yielding a projected safe gradient that is orthogonal to the alignment direction.}
+    \label{fig:selgrad_workflow_c}
 \end{figure}
 
 Algorithm~\ref{alg:selgrad} presents the complete SelGrad training procedure, integrating all components described in previous sections.
@@ -1312,9 +1340,16 @@ To ensure fair comparison, we use optimized training settings for all methods. F
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch4_fair_baseline.png}
-    \caption{Performance comparison on AGNEWS ($p=0.10$, Llama-2-7B). (a) Training time: SelGrad (8.97 min) adds only 40\% overhead over Vanilla SFT (6.39 min), far below SafeGrad (17.96 min). (b) Peak VRAM: SelGrad (35.86 GB) requires 54\% less than SafeGrad (78.30 GB). (c) Harmful Score: SelGrad achieves the lowest HS (1.20\%). (d) Functional Accuracy: Vanilla SFT, SafeGrad, and SelGrad maintain FA above 85\%, while AsFT achieves 82.20\%.}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_fair_baseline_top.png}
+    \caption{Efficiency comparison on AGNEWS ($p=0.10$, Llama-2-7B). (a) Training time: SelGrad (8.97 min) adds only 40\% overhead over Vanilla SFT (6.39 min), far below SafeGrad (17.96 min). (b) Peak VRAM: SelGrad (35.86 GB) requires 54\% less than SafeGrad (78.30 GB).}
     \label{fig:padding_impact}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_fair_baseline_bot.png}
+    \caption{Safety and accuracy comparison on AGNEWS ($p=0.10$, Llama-2-7B). (c) Harmful Score: SelGrad achieves the lowest HS (1.20\%). (d) Functional Accuracy: Vanilla SFT, SafeGrad, and SelGrad maintain FA above 85\%, while AsFT achieves 82.20\%.}
+    \label{fig:padding_impact_bot}
 \end{figure}
 
 %==================================================%
@@ -1487,13 +1522,20 @@ The results reveal important differences across architectures and defense method
 
 \textbf{Recommendation}: For Qwen-family models, practitioners should apply architecture-specific threshold calibration to reduce false positives. For Llama-3.1, where AsFT provides only partial defense, gradient-based methods (SafeGrad or SelGrad) offer more reliable safety guarantees.
 
-Figure~\ref{fig:cross_evaluation} visualizes the cross-dataset and cross-architecture generalization results, demonstrating SelGrad's safety-efficiency trade-off across diverse settings.
+Figures~\ref{fig:cross_dataset_eval} and~\ref{fig:cross_arch_eval} visualize the cross-dataset and cross-architecture generalization results, demonstrating SelGrad's safety-efficiency trade-off across diverse settings.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch4_generalization.png}
-    \caption{Cross-dataset and cross-architecture evaluation results at poisoning ratio $p=0.10$. (Left) Harmful Score comparison across three datasets: AsFT achieves the lowest HS on GSM8K (5.58\%), SelGrad achieves the lowest HS on AGNEWS (1.20\%), and SafeGrad achieves the lowest HS on SST-2 (1.99\%). Vanilla SFT shows high vulnerability across all datasets (30.68--40.64\%). (Right) Cross-architecture comparison across three architectures: SelGrad achieves the best HS on Llama-2-7B (1.20\%) and Llama-3.1-8B (3.98\% vs SafeGrad 7.97\%), while AsFT shows partial failure on Llama-3.1-8B (15.14\%).}
-    \label{fig:cross_evaluation}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_generalization_a.png}
+    \caption{Cross-dataset generalization at poisoning ratio $p=0.10$ (Llama-2-7B). AsFT achieves the lowest HS on GSM8K (5.58\%), SelGrad achieves the lowest HS on AGNEWS (1.20\%), and SafeGrad achieves the lowest HS on SST-2 (1.99\%). Vanilla SFT shows high vulnerability across all datasets (30.68--40.64\%).}
+    \label{fig:cross_dataset_eval}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_generalization_b.png}
+    \caption{Cross-architecture generalization on AGNEWS at $p=0.10$. SelGrad achieves the best HS on Llama-2-7B (1.20\%) and Llama-3.1-8B (3.98\% vs SafeGrad 7.97\%), while AsFT shows partial failure on Llama-3.1-8B (15.14\%).}
+    \label{fig:cross_arch_eval}
 \end{figure}
 
 
@@ -1528,13 +1570,20 @@ SafeGrad~\cite{yi2025safegrad} & 1.99 & 86.20 & 17.96m & 78.30G \\
 
 Table~\ref{tab:sota_comparison} compares SelGrad against all baseline methods. SelGrad achieves the lowest harmful score (1.20\%) with competitive task accuracy, and 2$\times$ speedup over SafeGrad.
 
-Figure~\ref{fig:comprehensive_comparison} provides a comprehensive visual comparison of all evaluated methods.
+Figures~\ref{fig:hs_heatmap} and~\ref{fig:efficiency_comparison} provide a comprehensive visual comparison of all evaluated methods.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/ch4_method_comparison.png}
-    \caption{Comprehensive comparison with state-of-the-art methods. (Left) Heatmap showing Harmful Score across methods and poisoning ratios: darker colors indicate higher (worse) HS. SelGrad achieves the lowest or tied-lowest HS at moderate-to-high poisoning ratios while SafeGrad maintains slightly lower HS at low ratios. (Right) Efficiency comparison: SelGrad achieves 2$\times$ speedup over SafeGrad and 54\% VRAM reduction while maintaining competitive safety.}
-    \label{fig:comprehensive_comparison}
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_method_comparison_a.png}
+    \caption{Harmful Score (\%) across methods and poisoning ratios on AGNEWS (Llama-2-7B). Darker colors indicate higher (worse) HS. SelGrad achieves the lowest or tied-lowest HS at moderate-to-high poisoning ratios ($p \geq 0.10$), while SafeGrad maintains slightly lower HS at low ratios.}
+    \label{fig:hs_heatmap}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figures/ch4_method_comparison_b.png}
+    \caption{Computational efficiency comparison on AGNEWS ($p=0.10$, Llama-2-7B). SelGrad achieves 2$\times$ speedup over SafeGrad (8.97 min vs 17.96 min) and 54\% VRAM reduction (35.86~GB vs 78.30~GB) while maintaining competitive safety.}
+    \label{fig:efficiency_comparison}
 \end{figure}
 
 \subsection{Safety-Efficiency Trade-off Analysis}
